@@ -1,9 +1,11 @@
 """Deterministic printer: AST -> formatted FileMaker calculation.
 
-Layout rules follow the configured Style; the defaults implement the style
-guide's mandatory Let / While shapes. Anything that fits within the line
-width and has no own-line comments is kept inline; Let and While are always
-exploded (configurable via Style.force_multiline).
+Layout rules follow the configured Style. All whitespace decisions route
+through the spacing/wrap/comments/keyword_case options, so a style pack - not
+the printer - decides paren padding, operator wrap position, comment
+placement, and keyword casing. Anything that fits within the line width and
+has no own-line comments is kept inline; functions whose rule says
+multiline: "always" are always exploded.
 """
 
 from __future__ import annotations
@@ -13,10 +15,46 @@ from .lexer import KEYWORD_OPS
 from .parser import Assign, Bin, Brackets, Call, Literal, Node, Paren, PRECEDENCE, Rep, Unary
 
 
+def _children(node: Node) -> list[Node]:
+    if isinstance(node, Unary):
+        return [node.operand]
+    if isinstance(node, Bin):
+        return [node.left, node.right]
+    if isinstance(node, Paren):
+        return [node.inner]
+    if isinstance(node, Assign):
+        return [node.target, node.value]
+    if isinstance(node, Rep):
+        return [node.target, node.index]
+    if isinstance(node, Brackets):
+        return list(node.items)
+    if isinstance(node, Call):
+        return list(node.args)
+    return []
+
+
+def _hoist_comments(node: Node) -> None:
+    """comments: "above" - move inline (trailing) comments onto their own line
+    above the code they annotate."""
+    for child in _children(node):
+        _hoist_comments(child)
+    if node.trailing:
+        for c in node.trailing:
+            c.own_line = True
+        node.leading.extend(node.trailing)
+        node.trailing = []
+
+
 class Printer:
     def __init__(self, style: Style | None = None):
         self.style = style or Style()
-        self.semi = " ;" if self.style.space_before_semicolon else ";"
+        sp = self.style.spacing
+        self.semi = " ;" if sp["before_semicolon"] else ";"
+        self.join = self.semi + " "
+        self.op_pad = " " if sp["around_operators"] else ""
+        self.pp = " " if sp["inside_parens"] else ""    # paren padding
+        self.bp = " " if sp["inside_brackets"] else ""  # bracket padding
+        self.np = " " if sp["before_paren"] else ""     # Name<here>(
 
     # ------------------------------------------------------------- helpers
 
@@ -24,8 +62,12 @@ class Printer:
         return self.style.indent * level
 
     def _op(self, op: str) -> str:
-        if op.lower() in KEYWORD_OPS and self.style.lowercase_keywords:
-            return op.lower()
+        if op.lower() in KEYWORD_OPS:
+            case = self.style.keyword_case
+            if case == "lower":
+                return op.lower()
+            if case == "upper":
+                return op.upper()
         return op
 
     def _rule(self, name: str) -> dict:
@@ -41,6 +83,8 @@ class Printer:
     # ----------------------------------------------------------------- api
 
     def format(self, node: Node) -> str:
+        if self.style.comments == "above":
+            _hoist_comments(node)
         return "\n".join(self.emit(node, 0)) + "\n"
 
     def emit(self, node: Node, level: int, prefix: str = "", suffix: str = "") -> list[str]:
@@ -85,10 +129,12 @@ class Printer:
             right = self._inline(node.right)
             if left is None or right is None:
                 return None
-            return f"{left} {self._op(node.op)} {right}"
+            op = self._op(node.op)
+            pad = " " if op[:1].isalpha() else self.op_pad
+            return f"{left}{pad}{op}{pad}{right}"
         if isinstance(node, Paren):
             inner = self._inline(node.inner)
-            return None if inner is None else f"( {inner} )"
+            return None if inner is None else f"({self.pp}{inner}{self.pp})"
         if isinstance(node, Rep):
             if node.target.has_comments():
                 return None
@@ -103,18 +149,20 @@ class Printer:
             parts = [self._inline(x) for x in node.items]
             if any(p is None for p in parts):
                 return None
-            join = self.semi + " "
+            if not parts:
+                return f"[{self.bp}]"
             tail = self.semi if node.trailing_semi else ""
-            return "[ " + join.join(parts) + tail + " ]" if parts else "[ ]"
+            return f"[{self.bp}{self.join.join(parts)}{tail}{self.bp}]"
         if isinstance(node, Call):
             if self._forced(node):
                 return None
             parts = [self._inline(a) for a in node.args]
             if any(p is None for p in parts):
                 return None
-            join = self.semi + " "
+            if not parts:
+                return f"{node.name}{self.np}({self.pp})"
             tail = self.semi if node.trailing_semi else ""
-            return f"{node.name} ( {join.join(parts)}{tail} )" if parts else f"{node.name} ( )"
+            return f"{node.name}{self.np}({self.pp}{self.join.join(parts)}{tail}{self.pp})"
         raise TypeError(f"unknown node {type(node).__name__}")
 
     # ----------------------------------------------------------- multiline
@@ -146,13 +194,20 @@ class Printer:
         if isinstance(node, Bin):
             terms: list[tuple[str | None, Node]] = []
             self._flatten(node, terms)
-            lines = self.emit(terms[0][1], level, prefix=prefix)
-            rest = terms[1:]
-            for idx, (op, term) in enumerate(rest):
-                last = idx == len(rest) - 1
-                lines += self.emit(
-                    term, level, prefix=self._op(op) + " ", suffix=suffix if last else ""
-                )
+            trailing_ops = self.style.operator_position == "trailing"
+            lines: list[str] = []
+            for idx, (op, term) in enumerate(terms):
+                last = idx == len(terms) - 1
+                if idx == 0:
+                    pre = prefix
+                elif trailing_ops:
+                    pre = ""
+                else:
+                    pre = self._op(op) + " "
+                seg = self.emit(term, level, prefix=pre, suffix=suffix if last else "")
+                if trailing_ops and not last:
+                    seg[-1] += " " + self._op(terms[idx + 1][0])
+                lines += seg
             return lines
 
         if isinstance(node, Assign):
@@ -217,7 +272,7 @@ class Printer:
         ind = self.ind(level)
         decls, result = call.args
         blank = self.style.let_blank_lines
-        lines = [ind + prefix + call.name + " ( ["]
+        lines = [ind + prefix + call.name + self.np + "(" + self.pp + "["]
         lines += [self.ind(level + 1) + c.text for c in decls.leading]
         if blank:
             lines.append("")
@@ -233,7 +288,7 @@ class Printer:
     def _multi_while(self, call: Call, level: int, prefix: str, suffix: str) -> list[str]:
         ind = self.ind(level)
         init, condition, logic, result = call.args
-        lines = [ind + prefix + call.name + " ("]
+        lines = [ind + prefix + call.name + self.np + "("]
         for block in (init, logic):
             lines += [self.ind(level + 1) + c.text for c in block.leading]
             lines.append(ind + "[")
@@ -251,7 +306,7 @@ class Printer:
         ind1 = self.ind(level + 1)
         args = call.args
         tail = self.semi if call.trailing_semi else ""
-        lines = [ind + prefix + call.name + " ("]
+        lines = [ind + prefix + call.name + self.np + "("]
         i = 0
         while i < len(args):
             if i == len(args) - 1:  # default value
@@ -266,9 +321,9 @@ class Printer:
             if (
                 c is not None
                 and v is not None
-                and len(ind1 + c + self.semi + " " + v + pair_sfx) <= self.style.width
+                and len(ind1 + c + self.join + v + pair_sfx) <= self.style.width
             ):
-                lines.append(ind1 + c + self.semi + " " + v + pair_sfx)
+                lines.append(ind1 + c + self.join + v + pair_sfx)
             else:
                 lines += self.emit(cond, level + 1, suffix=self.semi)
                 lines += self.emit(value, level + 1, suffix=pair_sfx)
@@ -278,14 +333,15 @@ class Printer:
 
     def _multi_leading(self, call: Call, level: int, prefix: str, suffix: str) -> list[str]:
         """First argument on the header line, then leading-semicolon lines
-        (the style guide's JSONSetElement shape)."""
+        (the JSONSetElement shape)."""
         ind = self.ind(level)
+        head_open = call.name + self.np + "(" + self.pp
         first = call.args[0]
         head = self._inline(first)
-        if head is not None and len(ind + prefix + call.name + " ( " + head) <= self.style.width:
-            lines = [ind + prefix + call.name + " ( " + head]
+        if head is not None and len(ind + prefix + head_open + head) <= self.style.width:
+            lines = [ind + prefix + head_open + head]
         else:
-            lines = self.emit(first, level, prefix=prefix + call.name + " ( ")
+            lines = self.emit(first, level, prefix=prefix + head_open)
         rest = call.args[1:]
         for i, arg in enumerate(rest):
             sfx = self.semi if call.trailing_semi and i == len(rest) - 1 else ""
@@ -296,7 +352,7 @@ class Printer:
     def _multi_call(self, call: Call, level: int, prefix: str, suffix: str) -> list[str]:
         ind = self.ind(level)
         last_sfx = self.semi if call.trailing_semi else ""
-        lines = [ind + prefix + call.name + " ("]
+        lines = [ind + prefix + call.name + self.np + "("]
         for i, arg in enumerate(call.args):
             sfx = self.semi if i < len(call.args) - 1 else last_sfx
             lines += self.emit(arg, level + 1, suffix=sfx)

@@ -60,29 +60,46 @@ when reviewing someone else's calc or checking your own before handing it over.
 
 ## Style packs and presets
 
-A style pack is machine-readable house style - `fmstyle.json`:
+A style pack is machine-readable house style - `fmstyle.json` - with two
+halves: **formatting** (top level: indent, width, spacing, wrap, comments,
+per-function shapes) and **lint** (opinionated practice rules, each opt-in):
 
 ```json
 {
   "indent": 4,
   "width": 96,
-  "space_before_semicolon": true,
-  "result_name": "result",
-  "local_variable_pattern": "^[_a-z][A-Za-z0-9]*$",
+  "keyword_case": "lower",
+  "comments": "preserve",
+  "wrap": { "operator_position": "leading" },
+  "spacing": { "inside_parens": true, "before_semicolon": true },
   "functions": {
     "let":   { "layout": "let",   "multiline": "always" },
-    "while": { "layout": "while", "multiline": "always" },
     "case":  { "layout": "pairs" },
     "jsonsetelement": { "layout": "leading", "multiline": "always" }
+  },
+  "lint": {
+    "let-explicit-result": { "result_name": "result" },
+    "variable-naming":     { "pattern": "^[_a-z][A-Za-z0-9]*$" }
   }
 }
 ```
 
-Per-function `layout` is `args` | `pairs` | `let` | `while` | `leading`;
-`multiline` is `auto` (explode only past the width) or `always`. Add any
-function name - built-in or custom - to control how that call is laid out.
-Built-in presets: `oogi` (blank-line Let blocks) and `compact` (tabs, compact
-blocks). List them with `fmstyle presets`.
+With no `lint` section, no practice rules run - bare fmstyle has no opinions
+you didn't give it. Per-function `layout` is `args` | `pairs` | `let` |
+`while` | `leading`; `multiline` is `auto` or `always`. Built-in presets:
+`oogi` (blank-line Let blocks + lint rules) and `compact` (tabs, compact
+blocks, no lint). List them with `fmstyle presets`.
+
+## Authoring a style pack for a team
+
+When the user wants to set up their house style ("configure fmstyle for us",
+"make our style pack", "our team formats like this"), follow
+**style-pack.md in this skill's directory** - it has the full dimension
+taxonomy, the interview questions, and the proving loop. The short version:
+observe or ask how THEY format (never impose defaults as if they were rules),
+encode only what they stated, keep lint rules opt-in, then PROVE the pack by
+formatting their own representative calcs with it and iterating until the
+output matches how they write.
 
 ## What it does NOT do
 

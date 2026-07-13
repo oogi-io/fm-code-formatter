@@ -267,14 +267,13 @@
     <summary>Style pack (fmstyle.json)</summary>
     <div class="cfg-body">
       <div class="cfg-hint">
-        This JSON is your organisation's mechanical style rules — the same file the
-        <code>fmstyle</code> CLI reads. Edit it here or load one from disk; everything
-        reformats live. Defaults implement the OOGI FileMaker style guide.
-        Add any function name under <code>"functions"</code> to control how that call is
-        laid out — e.g. <code>"if": { "multiline": "always" }</code> or
-        <code>"choose": { "layout": "pairs" }</code>
-        (layouts: <code>args</code>, <code>pairs</code>, <code>let</code>, <code>while</code>;
-        multiline: <code>auto</code>, <code>always</code>).
+        This JSON is your team's style pack — the same file the <code>fmstyle</code>
+        CLI reads. Top level = formatting (indent, width, <code>spacing</code>,
+        <code>wrap.operator_position</code> leading/trailing, <code>comments</code>
+        preserve/above, <code>keyword_case</code>, per-function <code>functions</code>
+        layouts). <code>"lint"</code> = practice rules, each <b>opt-in</b> — no
+        <code>lint</code> section, no opinions. Edit here or load from disk;
+        everything reformats live.
       </div>
       <textarea id="cfg" spellcheck="false"></textarea>
     </div>
@@ -725,33 +724,90 @@
     indent: "    ",
     width: 96,
     let_blank_lines: true,
-    lowercase_keywords: true,
-    space_before_semicolon: true,
-    result_name: "result",
-    local_variable_pattern: "^[_a-z][A-Za-z0-9]*$",
+    keyword_case: "lower",
+    comments: "preserve",
+    operator_position: "leading",
+  };
+  const DEFAULT_SPACING = {
+    inside_parens: true,
+    before_paren: true,
+    inside_brackets: true,
+    before_semicolon: true,
+    around_operators: true,
   };
   const DEFAULT_FUNCTIONS = {
     let: { layout: "let", multiline: "always" },
     while: { layout: "while", multiline: "always" },
     case: { layout: "pairs" },
   };
+  // Rule registry: rule id -> default params. Rules run only when enabled.
+  const LINT_RULES = {
+    "let-explicit-result": { result_name: "result" },
+    "variable-naming": { pattern: "^[_a-z][A-Za-z0-9]*$" },
+  };
   const VALID_LAYOUTS = new Set(["auto", "args", "pairs", "let", "while", "leading"]);
   const VALID_MULTILINE = new Set(["auto", "always"]);
+  const VALID_KEYWORD_CASE = new Set(["lower", "upper", "preserve"]);
+  const VALID_COMMENTS = new Set(["preserve", "above"]);
+  const VALID_OPERATOR_POSITION = new Set(["leading", "trailing"]);
+  const TOP_LEVEL_KEYS = new Set([
+    "indent", "width", "let_blank_lines", "keyword_case", "comments",
+    "spacing", "wrap", "functions", "lint",
+    "lowercase_keywords", "space_before_semicolon",
+    "result_name", "local_variable_pattern", "force_multiline",
+  ]);
 
   function makeStyle(data) {
     data = data || {};
-    const style = Object.assign({}, STYLE_DEFAULTS);
     for (const key of Object.keys(data)) {
-      if (!(key in STYLE_DEFAULTS) && key !== "functions" && key !== "force_multiline") {
-        throw new Error(`unknown style option(s): ${key}`);
-      }
+      if (!TOP_LEVEL_KEYS.has(key)) throw new Error(`unknown style option(s): ${key}`);
     }
-    for (const key of Object.keys(STYLE_DEFAULTS)) {
+    const style = Object.assign({}, STYLE_DEFAULTS);
+    for (const key of ["width", "let_blank_lines"]) {
       if (key in data) style[key] = data[key];
     }
     if ("indent" in data) {
       const v = data.indent;
       style.indent = v === "tab" ? "\t" : typeof v === "number" ? " ".repeat(v) : v;
+    }
+    if ("lowercase_keywords" in data) { // legacy
+      style.keyword_case = data.lowercase_keywords ? "lower" : "preserve";
+    }
+    if ("keyword_case" in data) {
+      if (!VALID_KEYWORD_CASE.has(data.keyword_case)) {
+        throw new Error(`keyword_case must be one of ${[...VALID_KEYWORD_CASE].sort().join(", ")}`);
+      }
+      style.keyword_case = data.keyword_case;
+    }
+    if ("comments" in data) {
+      if (!VALID_COMMENTS.has(data.comments)) {
+        throw new Error(`comments must be one of ${[...VALID_COMMENTS].sort().join(", ")}`);
+      }
+      style.comments = data.comments;
+    }
+    const spacing = Object.assign({}, DEFAULT_SPACING);
+    if ("space_before_semicolon" in data) { // legacy
+      spacing.before_semicolon = !!data.space_before_semicolon;
+    }
+    if ("spacing" in data) {
+      for (const [k, v] of Object.entries(data.spacing)) {
+        if (!(k in DEFAULT_SPACING)) throw new Error(`spacing: unknown key(s) ${k}`);
+        if (typeof v !== "boolean") throw new Error(`spacing.${k} must be true or false`);
+        spacing[k] = v;
+      }
+    }
+    style.spacing = spacing;
+    if ("wrap" in data) {
+      for (const k of Object.keys(data.wrap)) {
+        if (k !== "operator_position") throw new Error(`wrap: unknown key(s) ${k}`);
+      }
+      const v = data.wrap.operator_position;
+      if (v !== undefined) {
+        if (!VALID_OPERATOR_POSITION.has(v)) {
+          throw new Error(`wrap.operator_position must be one of ${[...VALID_OPERATOR_POSITION].sort().join(", ")}`);
+        }
+        style.operator_position = v;
+      }
     }
     const functions = {};
     for (const [name, rule] of Object.entries(DEFAULT_FUNCTIONS)) {
@@ -782,16 +838,80 @@
       }
     }
     style.functions = functions;
+
+    const lint = {};
+    if ("result_name" in data) { // legacy: implies the rule, as 0.2.x behaved
+      lint["let-explicit-result"] = Object.assign({}, LINT_RULES["let-explicit-result"], { result_name: data.result_name });
+    }
+    if ("local_variable_pattern" in data) { // legacy
+      lint["variable-naming"] = Object.assign({}, LINT_RULES["variable-naming"], { pattern: data.local_variable_pattern });
+    }
+    if ("lint" in data) {
+      for (const [rule, val] of Object.entries(data.lint)) {
+        if (!(rule in LINT_RULES)) {
+          throw new Error(`unknown lint rule "${rule}"; available: ${Object.keys(LINT_RULES).sort().join(", ")}`);
+        }
+        if (val === false) { delete lint[rule]; continue; }
+        const params = Object.assign({}, LINT_RULES[rule]);
+        if (val === true) {
+          // defaults
+        } else if (typeof val === "object" && val !== null) {
+          for (const k of Object.keys(val)) {
+            if (!(k in params)) throw new Error(`lint.${rule}: unknown key(s) ${k}`);
+          }
+          Object.assign(params, val);
+        } else {
+          throw new Error(`lint.${rule} must be true, false, or an object`);
+        }
+        lint[rule] = params;
+      }
+    }
+    style.lint = lint;
     return style;
   }
 
   // ----------------------------------------------------------- printer
 
+  function nodeChildren(nd) {
+    switch (nd.t) {
+      case "un": return [nd.operand];
+      case "bin": return [nd.left, nd.right];
+      case "paren": return [nd.inner];
+      case "assign": return [nd.target, nd.value];
+      case "rep": return [nd.target, nd.index];
+      case "brackets": return nd.items;
+      case "call": return nd.args;
+      default: return [];
+    }
+  }
+
+  // comments: "above" - move inline (trailing) comments onto their own line
+  // above the code they annotate
+  function hoistComments(nd) {
+    for (const child of nodeChildren(nd)) hoistComments(child);
+    if (nd.trailing.length) {
+      for (const c of nd.trailing) c.ownLine = true;
+      nd.leading.push(...nd.trailing);
+      nd.trailing = [];
+    }
+  }
+
   function makePrinter(style) {
-    const semi = style.space_before_semicolon ? " ;" : ";";
+    const sp = style.spacing;
+    const semi = sp.before_semicolon ? " ;" : ";";
+    const join = semi + " ";
+    const opPad = sp.around_operators ? " " : "";
+    const pp = sp.inside_parens ? " " : "";   // paren padding
+    const bp = sp.inside_brackets ? " " : ""; // bracket padding
+    const np = sp.before_paren ? " " : "";    // Name<here>(
     const ind = (level) => style.indent.repeat(level);
-    const opText = (op) =>
-      KEYWORD_OPS.has(op.toLowerCase()) && style.lowercase_keywords ? op.toLowerCase() : op;
+    const opText = (op) => {
+      if (KEYWORD_OPS.has(op.toLowerCase())) {
+        if (style.keyword_case === "lower") return op.toLowerCase();
+        if (style.keyword_case === "upper") return op.toUpperCase();
+      }
+      return op;
+    };
     const rule = (name) => style.functions[name.toLowerCase()] || {};
     const forced = (nd) =>
       nd.t === "call" && nd.args.length > 0 && rule(nd.name).multiline === "always";
@@ -819,7 +939,6 @@
     }
 
     function inlineBody(nd) {
-      const join = semi + " ";
       switch (nd.t) {
         case "lit":
           return nd.text;
@@ -833,11 +952,13 @@
           const left = inline(nd.left);
           const right = inline(nd.right);
           if (left === null || right === null) return null;
-          return `${left} ${opText(nd.op)} ${right}`;
+          const op = opText(nd.op);
+          const pad = /^[a-z]/i.test(op) ? " " : opPad;
+          return `${left}${pad}${op}${pad}${right}`;
         }
         case "paren": {
           const inner = inline(nd.inner);
-          return inner === null ? null : `( ${inner} )`;
+          return inner === null ? null : `(${pp}${inner}${pp})`;
         }
         case "rep": {
           if (hasComments(nd.target)) return null;
@@ -852,15 +973,17 @@
         case "brackets": {
           const parts = nd.items.map(inline);
           if (parts.some((p) => p === null)) return null;
+          if (!parts.length) return `[${bp}]`;
           const tail = nd.trailingSemi ? semi : "";
-          return parts.length ? `[ ${parts.join(join)}${tail} ]` : "[ ]";
+          return `[${bp}${parts.join(join)}${tail}${bp}]`;
         }
         case "call": {
           if (forced(nd)) return null;
           const parts = nd.args.map(inline);
           if (parts.some((p) => p === null)) return null;
+          if (!parts.length) return `${nd.name}${np}(${pp})`;
           const tail = nd.trailingSemi ? semi : "";
-          return parts.length ? `${nd.name} ( ${parts.join(join)}${tail} )` : `${nd.name} ( )`;
+          return `${nd.name}${np}(${pp}${parts.join(join)}${tail}${pp})`;
         }
         default:
           throw new Error(`unknown node ${nd.t}`);
@@ -893,11 +1016,17 @@
       if (nd.t === "bin") {
         const terms = [];
         flatten(nd, terms);
-        let lines = emit(terms[0][1], level, prefix, "");
-        const rest = terms.slice(1);
-        rest.forEach(([op, term], idx) => {
-          const last = idx === rest.length - 1;
-          lines = lines.concat(emit(term, level, opText(op) + " ", last ? suffix : ""));
+        const trailingOps = style.operator_position === "trailing";
+        let lines = [];
+        terms.forEach(([op, term], idx) => {
+          const last = idx === terms.length - 1;
+          let pre;
+          if (idx === 0) pre = prefix;
+          else if (trailingOps) pre = "";
+          else pre = opText(op) + " ";
+          const seg = emit(term, level, pre, last ? suffix : "");
+          if (trailingOps && !last) seg[seg.length - 1] += " " + opText(terms[idx + 1][0]);
+          lines = lines.concat(seg);
         });
         return lines;
       }
@@ -967,7 +1096,7 @@
     function multiLet(call, level, prefix, suffix) {
       const [decls, result] = call.args;
       const blank = style.let_blank_lines;
-      const lines = [ind(level) + prefix + call.name + " ( ["];
+      const lines = [ind(level) + prefix + call.name + np + "(" + pp + "["];
       lines.push(...decls.leading.map((c) => ind(level + 1) + c.text));
       if (blank) lines.push("");
       lines.push(...bracketItems(decls, level + 1, blank));
@@ -981,13 +1110,14 @@
 
     function multiLeading(call, level, prefix, suffix) {
       const indent = ind(level);
+      const headOpen = call.name + np + "(" + pp;
       const first = call.args[0];
       const head = inline(first);
       let lines;
-      if (head !== null && (indent + prefix + call.name + " ( " + head).length <= style.width) {
-        lines = [indent + prefix + call.name + " ( " + head];
+      if (head !== null && (indent + prefix + headOpen + head).length <= style.width) {
+        lines = [indent + prefix + headOpen + head];
       } else {
-        lines = emit(first, level, prefix + call.name + " ( ", "");
+        lines = emit(first, level, prefix + headOpen, "");
       }
       const rest = call.args.slice(1);
       rest.forEach((arg, i) => {
@@ -1000,7 +1130,7 @@
 
     function multiWhile(call, level, prefix, suffix) {
       const [init, condition, logic, result] = call.args;
-      const lines = [ind(level) + prefix + call.name + " ("];
+      const lines = [ind(level) + prefix + call.name + np + "("];
       for (const block of [init, logic]) {
         lines.push(...block.leading.map((c) => ind(level + 1) + c.text));
         lines.push(ind(level) + "[");
@@ -1018,7 +1148,7 @@
       const indent1 = ind(level + 1);
       const args = call.args;
       const tail = call.trailingSemi ? semi : "";
-      const lines = [ind(level) + prefix + call.name + " ("];
+      const lines = [ind(level) + prefix + call.name + np + "("];
       let i = 0;
       while (i < args.length) {
         if (i === args.length - 1) {
@@ -1032,8 +1162,8 @@
         const pairSfx = more ? semi : tail;
         const c = inline(cond);
         const v = inline(value);
-        if (c !== null && v !== null && (indent1 + c + semi + " " + v + pairSfx).length <= style.width) {
-          lines.push(indent1 + c + semi + " " + v + pairSfx);
+        if (c !== null && v !== null && (indent1 + c + join + v + pairSfx).length <= style.width) {
+          lines.push(indent1 + c + join + v + pairSfx);
         } else {
           lines.push(...emit(cond, level + 1, "", semi));
           lines.push(...emit(value, level + 1, "", pairSfx));
@@ -1046,7 +1176,7 @@
 
     function multiCall(call, level, prefix, suffix) {
       const lastSfx = call.trailingSemi ? semi : "";
-      const lines = [ind(level) + prefix + call.name + " ("];
+      const lines = [ind(level) + prefix + call.name + np + "("];
       call.args.forEach((arg, i) => {
         const sfx = i < call.args.length - 1 ? semi : lastSfx;
         lines.push(...emit(arg, level + 1, "", sfx));
@@ -1055,7 +1185,12 @@
       return lines;
     }
 
-    return { format: (nd) => emit(nd, 0).join("\n") + "\n" };
+    return {
+      format(nd) {
+        if (style.comments === "above") hoistComments(nd);
+        return emit(nd, 0).join("\n") + "\n";
+      },
+    };
   }
 
   // -------------------------------------------------------------- lint
@@ -1092,21 +1227,27 @@
 
   function checkLet(call, style, issues) {
     const items = call.args[0].items;
-    const name = style.result_name;
 
-    const last = items.length ? items[items.length - 1] : null;
-    if (!(last && last.t === "assign" && last.target.text === name)) {
-      issues.push(["let-explicit-result", `Let should define \`${name}\` as its final variable`]);
-    }
-    const result = call.args[1];
-    if (!(result.t === "lit" && result.kind === "NAME" && result.text === name)) {
-      issues.push(["let-explicit-result", `Let should return \`${name}\`, not an inline expression`]);
+    const explicit = style.lint["let-explicit-result"];
+    if (explicit) {
+      const name = explicit.result_name;
+      const last = items.length ? items[items.length - 1] : null;
+      if (!(last && last.t === "assign" && last.target.text === name)) {
+        issues.push(["let-explicit-result", `Let should define \`${name}\` as its final variable`]);
+      }
+      const result = call.args[1];
+      if (!(result.t === "lit" && result.kind === "NAME" && result.text === name)) {
+        issues.push(["let-explicit-result", `Let should return \`${name}\`, not an inline expression`]);
+      }
     }
 
-    const pattern = new RegExp(style.local_variable_pattern);
-    for (const item of items) {
-      if (item.t === "assign" && !pattern.test(item.target.text)) {
-        issues.push(["variable-naming", `variable \`${item.target.text}\` does not match ${style.local_variable_pattern}`]);
+    const naming = style.lint["variable-naming"];
+    if (naming) {
+      const pattern = new RegExp(naming.pattern);
+      for (const item of items) {
+        if (item.t === "assign" && !pattern.test(item.target.text)) {
+          issues.push(["variable-naming", `variable \`${item.target.text}\` does not match ${naming.pattern}`]);
+        }
       }
     }
   }
@@ -1139,6 +1280,7 @@
 
   function lintCalc(source, style) {
     style = style || makeStyle({});
+    if (!Object.keys(style.lint).length) return []; // no rules enabled - no opinions
     const tokens = tokenize(source);
     if (tokens.length === 1) return []; // comments only - nothing to lint
     const issues = [];
@@ -1166,25 +1308,23 @@
       indent: 4,
       width: 96,
       let_blank_lines: true,
-      lowercase_keywords: true,
-      space_before_semicolon: true,
-      result_name: "result",
-      local_variable_pattern: "^[_a-z][A-Za-z0-9]*$",
+      keyword_case: "lower",
       functions: {
         let: { layout: "let", multiline: "always" },
         while: { layout: "while", multiline: "always" },
         case: { layout: "pairs" },
         jsonsetelement: { layout: "leading", multiline: "always" },
       },
+      lint: {
+        "let-explicit-result": { result_name: "result" },
+        "variable-naming": { pattern: "^[_a-z][A-Za-z0-9]*$" },
+      },
     },
     compact: {
       indent: "tab",
       width: 96,
       let_blank_lines: false,
-      lowercase_keywords: true,
-      space_before_semicolon: true,
-      result_name: "result",
-      local_variable_pattern: "^_?[a-zA-Z][A-Za-z0-9_]*$",
+      keyword_case: "lower",
       functions: {
         let: { layout: "let", multiline: "always" },
         while: { layout: "while", multiline: "always" },

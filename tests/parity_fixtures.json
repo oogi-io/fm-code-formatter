@@ -121,17 +121,12 @@
  {
   "source": "Let ( [ x = 1 ] ; x + 1 )",
   "expected": "Let ( [\n\n    x = 1\n\n] ;\n    x + 1\n)\n",
-  "lint": [
-   "let-explicit-result",
-   "let-explicit-result"
-  ]
+  "lint": []
  },
  {
   "source": "Let ( [ FooBar = 1 ; result = FooBar ] ; result )",
   "expected": "Let ( [\n\n    FooBar = 1 ;\n\n    result = FooBar\n\n] ;\n    result\n)\n",
-  "lint": [
-   "variable-naming"
-  ]
+  "lint": []
  },
  {
   "source": "x AND y OR NOT z",
@@ -235,10 +230,7 @@
  {
   "source": "Let ( [ x = 1 ; ] ; x )",
   "expected": "Let ( [\n\n    x = 1 ;\n\n] ;\n    x\n)\n",
-  "lint": [
-   "let-explicit-result",
-   "let-explicit-result"
-  ]
+  "lint": []
  },
  {
   "source": "Let ( [ _applied = not IsEmpty ( x ) ; result = _applied ] ; result )",
@@ -253,10 +245,7 @@
  {
   "source": "Let (\n    [ // Before While loop\n        it1 = \"a\"; // scope note\n        it2 = 1; // another note\n        out = \"1.0 \" & it1 & ¶\n    ];\n    While (\n        [ i = 0 ; out = out & \"2.0 \" & ¶ ];\n        // Condition\n        i < 2;\n        [ i = i + 1 ; it1 = \"c\" ; out = out & \"5.\" & i & ¶ ];\n        out & \"6.0 \" & ¶\n    )\n    & \"7.0 \" & ¶\n)",
   "expected": "Let ( [\n\n    // Before While loop\n    it1 = \"a\" ; // scope note\n\n    it2 = 1 ; // another note\n\n    out = \"1.0 \" & it1 & ¶\n\n] ;\n    While (\n    [\n        i = 0 ;\n        out = out & \"2.0 \" & ¶\n    ] ;\n        // Condition\n        i < 2 ;\n    [\n        i = i + 1 ;\n        it1 = \"c\" ;\n        out = out & \"5.\" & i & ¶\n    ] ;\n        out & \"6.0 \" & ¶\n    )\n    & \"7.0 \"\n    & ¶\n)\n",
-  "lint": [
-   "let-explicit-result",
-   "let-explicit-result"
-  ]
+  "lint": []
  },
  {
   "source": "Let ( [ it1 = \"a\" ; // scope\nresult = it1 ] ; result )",
@@ -274,10 +263,7 @@
    "indent": 4,
    "width": 96,
    "let_blank_lines": true,
-   "lowercase_keywords": true,
-   "space_before_semicolon": true,
-   "result_name": "result",
-   "local_variable_pattern": "^[_a-z][A-Za-z0-9]*$",
+   "keyword_case": "lower",
    "functions": {
     "let": {
      "layout": "let",
@@ -293,6 +279,14 @@
     "jsonsetelement": {
      "layout": "leading",
      "multiline": "always"
+    }
+   },
+   "lint": {
+    "let-explicit-result": {
+     "result_name": "result"
+    },
+    "variable-naming": {
+     "pattern": "^[_a-z][A-Za-z0-9]*$"
     }
    }
   },
@@ -305,10 +299,7 @@
    "indent": 4,
    "width": 96,
    "let_blank_lines": true,
-   "lowercase_keywords": true,
-   "space_before_semicolon": true,
-   "result_name": "result",
-   "local_variable_pattern": "^[_a-z][A-Za-z0-9]*$",
+   "keyword_case": "lower",
    "functions": {
     "let": {
      "layout": "let",
@@ -325,6 +316,14 @@
      "layout": "leading",
      "multiline": "always"
     }
+   },
+   "lint": {
+    "let-explicit-result": {
+     "result_name": "result"
+    },
+    "variable-naming": {
+     "pattern": "^[_a-z][A-Za-z0-9]*$"
+    }
    }
   },
   "expected": "Let ( [\n\n    _foo = \"\" ;\n\n    result = _foo\n\n] ;\n    result\n)\n",
@@ -336,10 +335,7 @@
    "indent": "tab",
    "width": 96,
    "let_blank_lines": false,
-   "lowercase_keywords": true,
-   "space_before_semicolon": true,
-   "result_name": "result",
-   "local_variable_pattern": "^_?[a-zA-Z][A-Za-z0-9_]*$",
+   "keyword_case": "lower",
    "functions": {
     "let": {
      "layout": "let",
@@ -356,5 +352,123 @@
   },
   "expected": "Let ( [\n\t_foo = \"\" ;\n\tresult = _foo\n] ;\n\tresult\n)\n",
   "lint": []
+ },
+ {
+  "source": "Substitute ( text ; [ \"a\" ; \"b\" ] ; [ \"c\" ; \"d\" ] )",
+  "style": {
+   "spacing": {
+    "inside_parens": false,
+    "before_paren": false,
+    "inside_brackets": false,
+    "before_semicolon": false
+   }
+  },
+  "expected": "Substitute(text; [\"a\"; \"b\"]; [\"c\"; \"d\"])\n",
+  "lint": []
+ },
+ {
+  "source": "1 + 2 * 3 & x",
+  "style": {
+   "spacing": {
+    "around_operators": false
+   }
+  },
+  "expected": "1+2*3&x\n",
+  "lint": []
+ },
+ {
+  "source": "Let ( [ _foo = \"\" ; result = _foo ] ; result )",
+  "style": {
+   "spacing": {
+    "inside_parens": false,
+    "before_paren": false
+   }
+  },
+  "expected": "Let([\n\n    _foo = \"\" ;\n\n    result = _foo\n\n] ;\n    result\n)\n",
+  "lint": []
+ },
+ {
+  "source": "\"aaa\" & \"bbb\" & \"ccc\" & \"ddd\"",
+  "style": {
+   "wrap": {
+    "operator_position": "trailing"
+   },
+   "width": 14
+  },
+  "expected": "\"aaa\" &\n\"bbb\" &\n\"ccc\" &\n\"ddd\"\n",
+  "lint": []
+ },
+ {
+  "source": "Let ( [ _foo = \"\" ; result = _foo ] ; result )",
+  "style": {
+   "wrap": {
+    "operator_position": "trailing"
+   },
+   "width": 20
+  },
+  "expected": "Let ( [\n\n    _foo = \"\" ;\n\n    result = _foo\n\n] ;\n    result\n)\n",
+  "lint": []
+ },
+ {
+  "source": "Let ( [ x = 1 ; // one\nresult = x ] ; result ) // done",
+  "style": {
+   "comments": "above"
+  },
+  "expected": "Let ( [\n\n    // one\n    x = 1 ;\n\n    result = x\n\n] ;\n    result\n)\n// done\n",
+  "lint": []
+ },
+ {
+  "source": "x AND y or NOT z",
+  "style": {
+   "keyword_case": "upper"
+  },
+  "expected": "x AND y OR NOT z\n",
+  "lint": []
+ },
+ {
+  "source": "x AND y or NOT z",
+  "style": {
+   "keyword_case": "preserve"
+  },
+  "expected": "x AND y or NOT z\n",
+  "lint": []
+ },
+ {
+  "source": "Let ( [ x = 1 ] ; x + 1 )",
+  "style": {
+   "lint": {
+    "let-explicit-result": true
+   }
+  },
+  "expected": "Let ( [\n\n    x = 1\n\n] ;\n    x + 1\n)\n",
+  "lint": [
+   "let-explicit-result",
+   "let-explicit-result"
+  ]
+ },
+ {
+  "source": "Let ( [ x = 1 ] ; x + 1 )",
+  "style": {
+   "result_name": "output"
+  },
+  "expected": "Let ( [\n\n    x = 1\n\n] ;\n    x + 1\n)\n",
+  "lint": [
+   "let-explicit-result",
+   "let-explicit-result"
+  ]
+ },
+ {
+  "source": "Let ( [ BadName = 1 ; result = BadName ] ; result )",
+  "style": {
+   "lint": {
+    "variable-naming": {
+     "pattern": "^[a-z]+$"
+    }
+   }
+  },
+  "expected": "Let ( [\n\n    BadName = 1 ;\n\n    result = BadName\n\n] ;\n    result\n)\n",
+  "lint": [
+   "variable-naming"
+  ]
  }
 ]

@@ -81,6 +81,43 @@ CASES: list[dict] = (
         },
         {"source": GUIDE_LET, "style": preset_dict("oogi")},
         {"source": GUIDE_LET, "style": preset_dict("compact")},
+        # 0.3.0 dimensions: spacing / wrap / comments / keyword_case / lint opt-in
+        {
+            "source": 'Substitute ( text ; [ "a" ; "b" ] ; [ "c" ; "d" ] )',
+            "style": {
+                "spacing": {
+                    "inside_parens": False,
+                    "before_paren": False,
+                    "inside_brackets": False,
+                    "before_semicolon": False,
+                }
+            },
+        },
+        {"source": "1 + 2 * 3 & x", "style": {"spacing": {"around_operators": False}}},
+        {
+            "source": GUIDE_LET,
+            "style": {"spacing": {"inside_parens": False, "before_paren": False}},
+        },
+        {
+            "source": '"aaa" & "bbb" & "ccc" & "ddd"',
+            "style": {"wrap": {"operator_position": "trailing"}, "width": 14},
+        },
+        {
+            "source": GUIDE_LET,
+            "style": {"wrap": {"operator_position": "trailing"}, "width": 20},
+        },
+        {
+            "source": "Let ( [ x = 1 ; // one\nresult = x ] ; result ) // done",
+            "style": {"comments": "above"},
+        },
+        {"source": "x AND y or NOT z", "style": {"keyword_case": "upper"}},
+        {"source": "x AND y or NOT z", "style": {"keyword_case": "preserve"}},
+        {"source": "Let ( [ x = 1 ] ; x + 1 )", "style": {"lint": {"let-explicit-result": True}}},
+        {"source": "Let ( [ x = 1 ] ; x + 1 )", "style": {"result_name": "output"}},
+        {
+            "source": "Let ( [ BadName = 1 ; result = BadName ] ; result )",
+            "style": {"lint": {"variable-naming": {"pattern": "^[a-z]+$"}}},
+        },
     ]
 )
 

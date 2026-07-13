@@ -25,4 +25,4 @@ packages = ["fmstyle"]
 version = { attr = "fmstyle.__version__" }
 
 [tool.setuptools.package-data]
-fmstyle = ["web/index.html", "skill/SKILL.md", "presets/*.json"]
+fmstyle = ["web/index.html", "skill/*.md"]

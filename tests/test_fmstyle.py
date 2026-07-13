@@ -272,19 +272,82 @@ def test_presets():
     assert "\t_foo" in compact and "\n\n" not in compact  # tabs, no blank lines
 
 
+def test_lint_off_by_default():
+    # bare fmstyle has no opinions you didn't give it
+    assert lint_calc("Let ( [ x = 1 ] ; x + 1 )") == []
+
+
 def test_lint_flags_missing_result():
-    issues = lint_calc("Let ( [ x = 1 ] ; x + 1 )")
+    issues = lint_calc("Let ( [ x = 1 ] ; x + 1 )", preset_style("oogi"))
     rules = [r for r, _ in issues]
     assert rules.count("let-explicit-result") == 2
 
 
 def test_lint_flags_bad_variable_name():
-    issues = lint_calc('Let ( [ FooBar = 1 ; result = FooBar ] ; result )')
+    issues = lint_calc('Let ( [ FooBar = 1 ; result = FooBar ] ; result )', preset_style("oogi"))
     assert "variable-naming" in [r for r, _ in issues]
 
 
+def test_lint_rule_opt_in_shorthand():
+    style = Style.from_dict({"lint": {"let-explicit-result": True}})
+    issues = lint_calc("Let ( [ x = 1 ] ; x + 1 )", style)
+    assert [r for r, _ in issues] == ["let-explicit-result", "let-explicit-result"]
+    # explicitly disabled rule stays off even with legacy shorthand present
+    style = Style.from_dict({"result_name": "result", "lint": {"let-explicit-result": False}})
+    assert lint_calc("Let ( [ x = 1 ] ; x + 1 )", style) == []
+
+
+def test_lint_legacy_keys_enable_rules():
+    style = Style.from_dict({"result_name": "output"})
+    issues = lint_calc("Let ( [ output = 1 ] ; output )", style)
+    assert issues == []
+    issues = lint_calc("Let ( [ result = 1 ] ; result )", style)
+    assert [r for r, _ in issues] == ["let-explicit-result", "let-explicit-result"]
+
+
 def test_lint_clean_let_passes():
-    assert lint_calc(GUIDE_LET) == []
+    assert lint_calc(GUIDE_LET, preset_style("oogi")) == []
+
+
+def test_spacing_dense():
+    style = Style.from_dict({
+        "spacing": {
+            "inside_parens": False,
+            "before_paren": False,
+            "inside_brackets": False,
+            "before_semicolon": False,
+        }
+    })
+    assert (
+        format_calc('Substitute ( text ; [ "a" ; "b" ] )', style)
+        == 'Substitute(text; ["a"; "b"])\n'
+    )
+
+
+def test_spacing_around_operators():
+    style = Style.from_dict({"spacing": {"around_operators": False}})
+    assert format_calc("1 + 2 * 3", style) == "1+2*3\n"
+    # word operators keep their space regardless
+    assert format_calc("a and b", style) == "a and b\n"
+
+
+def test_operator_position_trailing():
+    style = Style.from_dict({"wrap": {"operator_position": "trailing"}, "width": 14})
+    assert format_calc('"aaa" & "bbb" & "ccc"', style) == '"aaa" &\n"bbb" &\n"ccc"\n'
+
+
+def test_comments_above():
+    style = Style.from_dict({"comments": "above"})
+    out = format_calc("Let ( [ x = 1 ; // one\nresult = x ] ; result )", style)
+    assert "    // one\n    x = 1 ;" in out
+    assert format_calc(out, style) == out  # idempotent
+
+
+def test_keyword_case():
+    assert format_calc("x AND y", Style.from_dict({"keyword_case": "upper"})) == "x AND y\n"
+    assert format_calc("x and y", Style.from_dict({"keyword_case": "upper"})) == "x AND y\n"
+    assert format_calc("x AND y", Style.from_dict({"keyword_case": "preserve"})) == "x AND y\n"
+    assert format_calc("x AND y", Style.from_dict({"lowercase_keywords": True})) == "x and y\n"
 
 
 if __name__ == "__main__":

@@ -31,30 +31,37 @@ def cmd_install_skill(args) -> int:
     import hashlib
     import shutil
 
-    src = Path(__file__).resolve().parent / "skill" / "SKILL.md"
+    src_dir = Path(__file__).resolve().parent / "skill"
+    src_files = sorted(src_dir.glob("*.md"))
     dest_dir = Path("~/.claude/skills/fmstyle").expanduser()
-    dest = dest_dir / "SKILL.md"
 
-    def digest(b: bytes) -> str:
-        return hashlib.sha256(b).hexdigest()[:12]
+    def digest(parts: list[bytes]) -> str:
+        h = hashlib.sha256()
+        for part in parts:
+            h.update(part)
+        return h.hexdigest()[:12]
 
     if args.check or args.remote:
-        if not dest.exists():
-            print(f"fmstyle skill is not installed ({dest} missing). Run: fmstyle install-skill")
+        if not (dest_dir / "SKILL.md").exists():
+            print(f"fmstyle skill is not installed ({dest_dir} missing). Run: fmstyle install-skill")
             return 2
-        installed = dest.read_bytes()
         if args.remote:
             import urllib.request
 
             try:
-                ref = urllib.request.urlopen(SKILL_RAW_URL, timeout=10).read()
+                ref = [urllib.request.urlopen(SKILL_RAW_URL, timeout=10).read()]
             except Exception as exc:  # noqa: BLE001 - offline is fine, just report
                 print(f"Could not fetch {SKILL_RAW_URL}: {exc}")
                 return 2
-            ref_label = "GitHub main"
+            installed = [(dest_dir / "SKILL.md").read_bytes()]
+            ref_label = "GitHub main (SKILL.md)"
             hint = "pipx upgrade fmstyle (or git pull), then: fmstyle install-skill"
         else:
-            ref = src.read_bytes()
+            installed = [
+                (dest_dir / f.name).read_bytes() if (dest_dir / f.name).exists() else b""
+                for f in src_files
+            ]
+            ref = [f.read_bytes() for f in src_files]
             ref_label = f"the skill shipped with fmstyle {__version__}"
             hint = "run: fmstyle install-skill"
         if digest(installed) == digest(ref):
@@ -67,7 +74,8 @@ def cmd_install_skill(args) -> int:
         return 1
 
     dest_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy(src, dest)
+    for f in src_files:
+        shutil.copy(f, dest_dir / f.name)
     print(f"Installed the 'fmstyle' skill (fmstyle {__version__}) -> {dest_dir}")
     print("Claude Code can now format FileMaker calculations from any directory -")
     print("just write or paste a calc, or ask to format one.")
@@ -133,6 +141,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {exc.args[0]}", file=sys.stderr)
         return 2
     rc = 0
+
+    if args.command == "lint" and not style.lint:
+        print(
+            'no lint rules enabled - enable them under "lint" in fmstyle.json '
+            "or use a preset (see: fmstyle presets)"
+        )
+        return 0
 
     for name, text in _read_sources(args.paths):
         try:

@@ -105,26 +105,52 @@ python3 -c "from fmstyle import format_calc; print(format_calc('Let([x=1;result=
 
 ## Configuration (`fmstyle.json`)
 
+A style pack has two honest halves — **formatting** (top level: mechanical
+layout, every team has some answer and any answer is valid) and **lint**
+(opinionated practice rules, each individually **opt-in**):
+
 ```json
 {
   "indent": "tab",
   "width": 96,
-  "let_blank_lines": true,
-  "lowercase_keywords": true,
-  "space_before_semicolon": true,
-  "result_name": "result",
-  "local_variable_pattern": "^[_a-z][A-Za-z0-9]*$",
+  "let_blank_lines": false,
+  "keyword_case": "lower",
+  "comments": "preserve",
+  "wrap": { "operator_position": "trailing" },
+  "spacing": {
+    "inside_parens": true,
+    "before_paren": true,
+    "inside_brackets": true,
+    "before_semicolon": true,
+    "around_operators": true
+  },
   "functions": {
     "let":   { "layout": "let",   "multiline": "always" },
     "while": { "layout": "while", "multiline": "always" },
     "case":  { "layout": "pairs" },
-    "if":    { "multiline": "always" }
+    "jsonsetelement": { "layout": "leading", "multiline": "always" }
+  },
+  "lint": {
+    "let-explicit-result": { "result_name": "result" },
+    "variable-naming":     { "pattern": "^[_a-z][A-Za-z0-9]*$" }
   }
 }
 ```
 
-An org's style pack is just this file (plus, optionally, a prose guideline document
-for the advisory rules), versioned in their repo.
+With no `lint` section, no practice rules run: bare fmstyle formats your code
+but has **no opinions you didn't give it**. Prefer a calculation as the Let
+result instead of an explicit `result` variable? That's a valid style — just
+don't enable `let-explicit-result`. Wrapped operators at line ends
+(`"a" &`) instead of line starts? `wrap.operator_position: "trailing"`.
+Tight parens (`If(x; y)`)? Turn off the `spacing` pads. Inline comments moved
+above the code? `comments: "above"`.
+
+The full dimension taxonomy — every knob, its values, and which dimensions are
+(for now) fixed — lives in [fmstyle/skill/style-pack.md](fmstyle/skill/style-pack.md),
+which doubles as the authoring instructions an AI assistant follows to build a
+team's pack from their guide, their code samples, or a short interview. An
+org's pack is just this JSON file, versioned in their repo. (0.2.x keys like
+`result_name` and `space_before_semicolon` still work as legacy shorthands.)
 
 ### Presets
 
@@ -134,8 +160,8 @@ Named, ready-made style packs — pick one in the web app's toolbar or via
 
 | Preset | Highlights |
 |---|---|
-| `oogi` | 4-space indent, blank-line Let blocks, explicit `result`, leading-semicolon JSONSetElement |
-| `compact` | tab indent, compact Let blocks (no blank lines), `camelCase` locals |
+| `oogi` | 4-space indent, blank-line Let blocks, leading-semicolon JSONSetElement; lint: explicit `result`, camelCase locals |
+| `compact` | tab indent, compact Let blocks (no blank lines), no lint opinions |
 
 Adding a preset is a PR with one dict in `fmstyle/presets.py` (and the matching
 entry in the web app). Presets should describe a *real, adoptable* convention.
