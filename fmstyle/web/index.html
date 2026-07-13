@@ -1,0 +1,1338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fmstyle — FileMaker calculation formatter</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --border: #d9dee5;
+    --text: #1c2430;
+    --muted: #5b6673;
+    --accent: #2563eb;
+    --accent-soft: #eff4ff;
+    --ok: #15803d;
+    --ok-soft: #ecfdf3;
+    --err: #b91c1c;
+    --err-soft: #fef2f2;
+    --warn: #92400e;
+    --warn-soft: #fffbeb;
+    --code-bg: #0f172a;
+    --code-text: #e2e8f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1220;
+      --panel: #111a2b;
+      --border: #24314a;
+      --text: #e5eaf2;
+      --muted: #93a1b5;
+      --accent: #60a5fa;
+      --accent-soft: #16233d;
+      --ok: #4ade80;
+      --ok-soft: #10281a;
+      --err: #f87171;
+      --err-soft: #2b1414;
+      --warn: #fbbf24;
+      --warn-soft: #2a2210;
+      --code-bg: #0a0f1c;
+      --code-text: #dbe4f0;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 20px 24px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px 16px;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  header h1 { font-size: 21px; margin: 0; letter-spacing: -0.01em; }
+  header h1 span { color: var(--accent); }
+  .tagline { color: var(--muted); font-size: 14px; }
+  .privacy {
+    margin-left: auto;
+    font-size: 12.5px;
+    color: var(--ok);
+    background: var(--ok-soft);
+    border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent);
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  main { max-width: 1240px; margin: 0 auto; padding: 0 24px 40px; }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0 14px;
+    font-size: 13.5px;
+  }
+  .toolbar label { color: var(--muted); }
+  select, input[type="number"] {
+    font: inherit;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 8px;
+  }
+  input[type="number"] { width: 72px; }
+  button {
+    font: inherit;
+    font-size: 13.5px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  button.primary:hover { filter: brightness(1.08); color: #fff; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .pane {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .pane-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .pane-head .spacer { margin-left: auto; }
+  textarea#input {
+    border: 0;
+    outline: none;
+    resize: vertical;
+    min-height: 340px;
+    padding: 14px;
+    font: 13.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    background: transparent;
+    color: var(--text);
+    width: 100%;
+  }
+  pre#output {
+    margin: 0;
+    padding: 14px;
+    min-height: 340px;
+    overflow: auto;
+    font: 13.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    background: var(--code-bg);
+    color: var(--code-text);
+    tab-size: 4;
+    flex: 1;
+  }
+  pre#output.stale { opacity: 0.45; }
+  .statusline {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-size: 13.5px;
+    min-height: 28px;
+  }
+  .chip {
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 12.5px;
+  }
+  .chip.ok { color: var(--ok); background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+  .chip.err { color: var(--err); background: var(--err-soft); border-color: color-mix(in srgb, var(--err) 30%, transparent); }
+  .chip.warn { color: var(--warn); background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+  #lint { margin-top: 4px; display: none; }
+  #lint ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  #lint li {
+    background: var(--warn-soft);
+    border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 13.5px;
+  }
+  #lint li b { color: var(--warn); font-weight: 600; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  details.cfg {
+    margin-top: 18px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0;
+  }
+  details.cfg summary {
+    cursor: pointer;
+    padding: 11px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  details.cfg .cfg-body { padding: 0 14px 14px; }
+  details.cfg textarea {
+    width: 100%;
+    min-height: 190px;
+    font: 12.5px/1.5 ui-monospace, Menlo, monospace;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    resize: vertical;
+  }
+  .cfg-hint { font-size: 12.5px; color: var(--muted); margin: 8px 0; }
+  footer {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 24px 28px;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1><span>fm</span>-style</h1>
+  <div class="tagline">Deterministic FileMaker calculation formatter — paste, format, copy.</div>
+  <div class="privacy">Runs entirely in your browser — nothing is uploaded</div>
+</header>
+
+<main>
+  <div class="toolbar">
+    <label for="presetSel">Preset</label>
+    <select id="presetSel">
+      <option value="oogi">OOGI</option>
+      <option value="compact">Compact</option>
+      <option value="custom">Custom</option>
+    </select>
+    <label for="indentSel">Indent</label>
+    <select id="indentSel">
+      <option value="4">4 spaces</option>
+      <option value="2">2 spaces</option>
+      <option value="tab">Tab</option>
+    </select>
+    <label for="widthInp">Width</label>
+    <input type="number" id="widthInp" min="40" max="200" step="1" value="96">
+    <button id="loadCfgBtn" type="button">Load fmstyle.json…</button>
+    <input type="file" id="cfgFile" accept=".json,application/json" hidden>
+    <span class="spacer" style="margin-left:auto"></span>
+    <button id="copyBtn" class="primary" type="button">Copy result</button>
+  </div>
+
+  <div class="grid">
+    <div class="pane">
+      <div class="pane-head">Calculation in</div>
+      <textarea id="input" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+    </div>
+    <div class="pane">
+      <div class="pane-head">Formatted <span class="spacer"></span></div>
+      <pre id="output"><code id="outcode"></code></pre>
+    </div>
+  </div>
+
+  <div class="statusline" id="status"></div>
+  <div id="lint"></div>
+
+  <details class="cfg">
+    <summary>Style pack (fmstyle.json)</summary>
+    <div class="cfg-body">
+      <div class="cfg-hint">
+        This JSON is your organisation's mechanical style rules — the same file the
+        <code>fmstyle</code> CLI reads. Edit it here or load one from disk; everything
+        reformats live. Defaults implement the OOGI FileMaker style guide.
+        Add any function name under <code>"functions"</code> to control how that call is
+        laid out — e.g. <code>"if": { "multiline": "always" }</code> or
+        <code>"choose": { "layout": "pairs" }</code>
+        (layouts: <code>args</code>, <code>pairs</code>, <code>let</code>, <code>while</code>;
+        multiline: <code>auto</code>, <code>always</code>).
+      </div>
+      <textarea id="cfg" spellcheck="false"></textarea>
+    </div>
+  </details>
+</main>
+
+<footer>
+  fmstyle · deterministic formatter for FileMaker calculations ·
+  formatting is verified token-safe: output must re-tokenize to exactly the input's
+  code and comments, otherwise the tool refuses to change anything.
+</footer>
+
+<script>
+/* fmstyle-engine-start */
+/* JS port of the fmstyle Python engine (lexer/parser/printer/config/rules).
+   Parity-tested against Python via tests/test_parity.mjs — keep in sync. */
+(function () {
+  "use strict";
+
+  class LexError extends Error {}
+  class ParseError extends Error {}
+  class FormatSafetyError extends Error {}
+
+  const KEYWORD_OPS = new Set(["and", "or", "xor", "not"]);
+  const TWO_CHAR_OPS = ["<>", "<=", ">="];
+  const SINGLE_CHAR_OPS = new Set("&+-*/^=<>≠≤≥");
+  const CMP_OPS = new Set(["=", "≠", "<>", "<", ">", "≤", "≥", "<=", ">="]);
+  const PRECEDENCE = {
+    or: 1, xor: 1, and: 2, not: 3,
+    "=": 4, "≠": 4, "<>": 4, "<": 4, ">": 4, "≤": 4, "≥": 4, "<=": 4, ">=": 4,
+    "&": 5, "+": 6, "-": 6, "*": 7, "/": 7, "^": 8,
+  };
+
+  const RE_NAME = /[\p{L}\p{N}_~#.]/u;
+  const RE_ALPHA = /\p{L}/u;
+  const UNICODE_OPS = "≠≤≥¶";
+  // ~ # . and any non-operator non-ASCII char appear in real FileMaker names
+  const isNameChar = (ch) =>
+    RE_NAME.test(ch) || (ch.charCodeAt(0) > 127 && !UNICODE_OPS.includes(ch));
+  const isNameStart = (ch) =>
+    RE_ALPHA.test(ch) || "_~#".includes(ch) ||
+    (ch.charCodeAt(0) > 127 && !UNICODE_OPS.includes(ch));
+  const isDigit = (ch) => ch >= "0" && ch <= "9";
+  const isHSpace = (ch) => ch === " " || ch === "\t";
+
+  // ------------------------------------------------------------- lexer
+
+  function extendNameRun(s, end) {
+    const n = s.length;
+    for (;;) {
+      let k = end;
+      while (k < n && isHSpace(s[k])) k++;
+      if (k === end || k >= n || !isNameChar(s[k])) break;
+      let j = k;
+      while (j < n && isNameChar(s[j])) j++;
+      if (KEYWORD_OPS.has(s.slice(k, j).toLowerCase())) break;
+      let m = j;
+      while (m < n && isHSpace(s[m])) m++;
+      if (m < n && s[m] === "(") break; // that word is a function name
+      end = j;
+    }
+    return end;
+  }
+
+  function qualify(s, end, line) {
+    const n = s.length;
+    let m = end;
+    while (m < n && isHSpace(s[m])) m++;
+    if (!s.startsWith("::", m)) return end;
+    m += 2;
+    while (m < n && isHSpace(s[m])) m++;
+    if (s.startsWith("${", m)) {
+      const k = s.indexOf("}", m);
+      if (k === -1) throw new LexError(`unterminated \${...} name (line ${line})`);
+      return k + 1;
+    }
+    if (m < n && isNameChar(s[m])) {
+      let j = m;
+      while (j < n && isNameChar(s[j])) j++;
+      return extendNameRun(s, j);
+    }
+    throw new LexError(`expected a field name after '::' (line ${line})`);
+  }
+
+  function tokenize(source) {
+    const n = source.length;
+    let i = 0;
+    let line = 1;
+    let fresh = true;
+    let pending = [];
+    const tokens = [];
+
+    const add = (kind, text) => {
+      tokens.push({ kind, text, line, pre: pending });
+      pending = [];
+      fresh = false;
+    };
+
+    while (i < n) {
+      const ch = source[i];
+
+      if (ch === "\n") { line++; i++; fresh = true; continue; }
+      if (ch === " " || ch === "\t" || ch === "\r") { i++; continue; }
+
+      if (source.startsWith("//", i)) {
+        let j = source.indexOf("\n", i);
+        if (j === -1) j = n;
+        pending.push({ text: source.slice(i, j).replace(/\s+$/, ""), ownLine: fresh });
+        fresh = false;
+        i = j;
+        continue;
+      }
+
+      if (source.startsWith("/*", i)) {
+        let depth = 1;
+        let j = i + 2;
+        while (j < n && depth) {
+          if (source.startsWith("/*", j)) { depth++; j += 2; }
+          else if (source.startsWith("*/", j)) { depth--; j += 2; }
+          else { if (source[j] === "\n") line++; j++; }
+        }
+        if (depth) throw new LexError(`unterminated block comment (line ${line})`);
+        pending.push({ text: source.slice(i, j), ownLine: fresh });
+        fresh = false;
+        i = j;
+        continue;
+      }
+
+      if (ch === '"') {
+        let j = i + 1;
+        while (j < n) {
+          if (source[j] === "\\") { j += 2; continue; }
+          if (source[j] === '"') break;
+          if (source[j] === "\n") line++;
+          j++;
+        }
+        if (j >= n) throw new LexError(`unterminated string (line ${line})`);
+        add("STRING", source.slice(i, j + 1));
+        i = j + 1;
+        continue;
+      }
+
+      if (isDigit(ch) || (ch === "." && i + 1 < n && isDigit(source[i + 1]))) {
+        let j = i;
+        let dot = false;
+        while (j < n && (isDigit(source[j]) || (source[j] === "." && !dot))) {
+          if (source[j] === ".") dot = true;
+          j++;
+        }
+        add("NUMBER", source.slice(i, j));
+        i = j;
+        continue;
+      }
+
+      if (ch === "$") {
+        let j = i;
+        while (j < n && source[j] === "$") j++;
+        if (j - i > 2) throw new LexError(`too many '$' (line ${line})`);
+        if (j < n && source[j] === "{") {
+          const k = source.indexOf("}", j);
+          if (k === -1) throw new LexError(`unterminated \${...} name (line ${line})`);
+          const end = qualify(source, k + 1, line);
+          add("NAME", source.slice(i, end));
+          i = end;
+          continue;
+        }
+        if (j < n && isNameChar(source[j])) {
+          let k = j;
+          while (k < n && isNameChar(source[k])) k++;
+          add("NAME", source.slice(i, k));
+          i = k;
+          continue;
+        }
+        throw new LexError(`bare '$' (line ${line})`);
+      }
+
+      if (ch === "¶") { add("NAME", ch); i++; continue; }
+
+      if (isNameStart(ch)) {
+        let j = i;
+        while (j < n && isNameChar(source[j])) j++;
+        if (KEYWORD_OPS.has(source.slice(i, j).toLowerCase())) {
+          add("OP", source.slice(i, j));
+          i = j;
+          continue;
+        }
+        let end = extendNameRun(source, j);
+        end = qualify(source, end, line);
+        add("NAME", source.slice(i, end));
+        i = end;
+        continue;
+      }
+
+      let matched = false;
+      for (const two of TWO_CHAR_OPS) {
+        if (source.startsWith(two, i)) { add("OP", two); i += 2; matched = true; break; }
+      }
+      if (matched) continue;
+
+      if (SINGLE_CHAR_OPS.has(ch)) { add("OP", ch); i++; continue; }
+      if (ch === "(") { add("LPAREN", ch); i++; continue; }
+      if (ch === ")") { add("RPAREN", ch); i++; continue; }
+      if (ch === "[") { add("LBRACKET", ch); i++; continue; }
+      if (ch === "]") { add("RBRACKET", ch); i++; continue; }
+      if (ch === ";") { add("SEMI", ch); i++; continue; }
+
+      throw new LexError(`unexpected character ${JSON.stringify(ch)} (line ${line})`);
+    }
+
+    tokens.push({ kind: "EOF", text: "", line, pre: pending });
+    return tokens;
+  }
+
+  // ------------------------------------------------------------ parser
+
+  const node = (t, props) => Object.assign({ t, leading: [], trailing: [], post: [] }, props);
+  const hasComments = (nd) => nd.leading.length > 0 || nd.trailing.length > 0 || nd.post.length > 0;
+
+  function parse(tokens) {
+    let i = 0;
+    const cur = () => tokens[i];
+    const eat = (kind) => {
+      const t = tokens[i];
+      if (kind && t.kind !== kind) {
+        throw new ParseError(`expected ${kind}, got ${t.kind} ${JSON.stringify(t.text)} (line ${t.line})`);
+      }
+      i++;
+      return t;
+    };
+    const atOp = (...names) => {
+      const t = cur();
+      return t.kind === "OP" && names.includes(t.text.toLowerCase());
+    };
+    const absorb = (nd, sep) => {
+      for (const c of sep.pre) (c.ownLine ? nd.post : nd.trailing).push(c);
+      sep.pre = [];
+    };
+    // A comment on the same line as (and after) a `;` describes the item just
+    // closed - `x = 1 ; // note`. The lexer attached it to the next token; move
+    // that same-line run onto this item as a trailing comment.
+    const trailingAfterSep = (nd) => {
+      const tok = cur();
+      while (tok.pre.length && !tok.pre[0].ownLine) nd.trailing.push(tok.pre.shift());
+    };
+    // Build a binary node, hoisting the left operand's leading comments up to
+    // the whole expression - a comment before the leftmost leaf sits before the
+    // entire expression, so leaving it on the leaf would block inline rendering.
+    const mkbin = (op, left, right) => {
+      const nd = node("bin", { op, left, right });
+      nd.leading = left.leading;
+      left.leading = [];
+      return nd;
+    };
+
+    const binaryLower = (ops, next) => {
+      let left = next();
+      while (atOp(...ops)) {
+        const t = eat();
+        const right = next();
+        right.leading = t.pre.concat(right.leading);
+        left = mkbin(t.text, left, right);
+      }
+      return left;
+    };
+    const binaryText = (ops, next) => {
+      let left = next();
+      while (cur().kind === "OP" && ops.includes(cur().text)) {
+        const t = eat();
+        const right = next();
+        right.leading = t.pre.concat(right.leading);
+        left = mkbin(t.text, left, right);
+      }
+      return left;
+    };
+
+    const expr = () => binaryLower(["or", "xor"], andLevel);
+    const andLevel = () => binaryLower(["and"], notLevel);
+    const notLevel = () => {
+      if (atOp("not")) {
+        const t = eat();
+        const nd = node("un", { op: t.text, operand: notLevel() });
+        nd.leading = t.pre;
+        return nd;
+      }
+      return cmpLevel();
+    };
+    const cmpLevel = () => {
+      let left = concatLevel();
+      while (cur().kind === "OP" && CMP_OPS.has(cur().text)) {
+        const t = eat();
+        const right = concatLevel();
+        right.leading = t.pre.concat(right.leading);
+        left = mkbin(t.text, left, right);
+      }
+      return left;
+    };
+    const concatLevel = () => binaryText(["&"], addLevel);
+    const addLevel = () => binaryText(["+", "-"], mulLevel);
+    const mulLevel = () => binaryText(["*", "/"], powLevel);
+    const powLevel = () => binaryText(["^"], unaryLevel);
+    const unaryLevel = () => {
+      const t = cur();
+      if (t.kind === "OP" && (t.text === "-" || t.text === "+")) {
+        eat();
+        const nd = node("un", { op: t.text, operand: unaryLevel() });
+        nd.leading = t.pre;
+        return nd;
+      }
+      return primary();
+    };
+
+    const primary = () => {
+      const t = cur();
+
+      if (t.kind === "NUMBER" || t.kind === "STRING") {
+        eat();
+        const nd = node("lit", { kind: t.kind, text: t.text });
+        nd.leading = t.pre;
+        return nd;
+      }
+
+      if (t.kind === "NAME") {
+        eat();
+        if (cur().kind === "LPAREN") {
+          const lp = eat();
+          const call = node("call", { name: t.text, args: [], trailingSemi: false });
+          call.leading = t.pre.concat(lp.pre);
+          if (cur().kind === "RPAREN") {
+            const rp = cur();
+            absorb(call, rp);
+            eat();
+            return call;
+          }
+          for (;;) {
+            const arg = bracketsOrExpr();
+            call.args.push(arg);
+            const sep = cur();
+            absorb(arg, sep);
+            if (sep.kind === "SEMI") {
+              eat();
+              trailingAfterSep(arg);
+              if (cur().kind === "RPAREN") { // trailing semicolon
+                call.trailingSemi = true;
+                absorb(call, cur());
+                eat();
+                break;
+              }
+              continue;
+            }
+            if (sep.kind === "RPAREN") { eat(); break; }
+            throw new ParseError(`expected ';' or ')', got ${sep.kind} ${JSON.stringify(sep.text)} (line ${sep.line})`);
+          }
+          return call;
+        }
+        const nd = node("lit", { kind: "NAME", text: t.text });
+        nd.leading = t.pre;
+        if (cur().kind === "LBRACKET") { // repetition: field[2]
+          eat();
+          const index = expr();
+          const rb = cur();
+          absorb(index, rb);
+          eat("RBRACKET");
+          return node("rep", { target: nd, index });
+        }
+        return nd;
+      }
+
+      if (t.kind === "LPAREN") {
+        eat();
+        const inner = expr();
+        const rp = cur();
+        absorb(inner, rp);
+        eat("RPAREN");
+        const nd = node("paren", { inner });
+        nd.leading = t.pre;
+        return nd;
+      }
+
+      throw new ParseError(`unexpected ${t.kind} ${JSON.stringify(t.text)} (line ${t.line})`);
+    };
+
+    const bracketsOrExpr = () => {
+      const t = cur();
+      if (t.kind !== "LBRACKET") return expr();
+
+      eat();
+      const nd = node("brackets", { items: [], trailingSemi: false });
+      nd.leading = t.pre;
+      if (cur().kind === "RBRACKET") {
+        const rb = cur();
+        absorb(nd, rb);
+        eat();
+        return nd;
+      }
+      for (;;) {
+        // `name = expr` opening a bracket item is an assignment whose value
+        // is a FULL expression (so `x = not y` / `x = a and b` parse right)
+        let item;
+        const nxt = tokens[i + 1];
+        if (cur().kind === "NAME" && nxt && nxt.kind === "OP" && nxt.text === "=") {
+          const nameTok = eat();
+          const eq = eat();
+          const target = node("lit", { kind: "NAME", text: nameTok.text });
+          target.leading = nameTok.pre;
+          const value = expr();
+          value.leading = eq.pre.concat(value.leading);
+          item = node("assign", { target, value });
+        } else {
+          item = expr();
+          if (item.t === "bin" && item.op === "=" && item.left.t === "lit" && item.left.kind === "NAME") {
+            const assign = node("assign", { target: item.left, value: item.right });
+            assign.leading = item.leading;
+            item = assign;
+          }
+        }
+        nd.items.push(item);
+        const sep = cur();
+        absorb(item, sep);
+        if (sep.kind === "SEMI") {
+          eat();
+          trailingAfterSep(item);
+          if (cur().kind === "RBRACKET") { // trailing semicolon
+            nd.trailingSemi = true;
+            absorb(nd, cur());
+            eat();
+            break;
+          }
+          continue;
+        }
+        if (sep.kind === "RBRACKET") { eat(); break; }
+        throw new ParseError(`expected ';' or ']', got ${sep.kind} ${JSON.stringify(sep.text)} (line ${sep.line})`);
+      }
+      return nd;
+    };
+
+    const root = expr();
+    const eof = cur();
+    if (eof.kind !== "EOF") {
+      throw new ParseError(`unexpected ${eof.kind} ${JSON.stringify(eof.text)} (line ${eof.line})`);
+    }
+    root.post.push(...eof.pre);
+    return root;
+  }
+
+  // ------------------------------------------------------------- style
+
+  const STYLE_DEFAULTS = {
+    indent: "    ",
+    width: 96,
+    let_blank_lines: true,
+    lowercase_keywords: true,
+    space_before_semicolon: true,
+    result_name: "result",
+    local_variable_pattern: "^[_a-z][A-Za-z0-9]*$",
+  };
+  const DEFAULT_FUNCTIONS = {
+    let: { layout: "let", multiline: "always" },
+    while: { layout: "while", multiline: "always" },
+    case: { layout: "pairs" },
+  };
+  const VALID_LAYOUTS = new Set(["auto", "args", "pairs", "let", "while", "leading"]);
+  const VALID_MULTILINE = new Set(["auto", "always"]);
+
+  function makeStyle(data) {
+    data = data || {};
+    const style = Object.assign({}, STYLE_DEFAULTS);
+    for (const key of Object.keys(data)) {
+      if (!(key in STYLE_DEFAULTS) && key !== "functions" && key !== "force_multiline") {
+        throw new Error(`unknown style option(s): ${key}`);
+      }
+    }
+    for (const key of Object.keys(STYLE_DEFAULTS)) {
+      if (key in data) style[key] = data[key];
+    }
+    if ("indent" in data) {
+      const v = data.indent;
+      style.indent = v === "tab" ? "\t" : typeof v === "number" ? " ".repeat(v) : v;
+    }
+    const functions = {};
+    for (const [name, rule] of Object.entries(DEFAULT_FUNCTIONS)) {
+      functions[name] = Object.assign({}, rule);
+    }
+    if ("force_multiline" in data) { // legacy shorthand for multiline: always
+      for (const rule of Object.values(functions)) delete rule.multiline;
+      for (const name of data.force_multiline) {
+        const key = name.toLowerCase();
+        functions[key] = functions[key] || {};
+        functions[key].multiline = "always";
+      }
+    }
+    if ("functions" in data) {
+      for (const [name, rule] of Object.entries(data.functions)) {
+        if (typeof rule !== "object" || rule === null) throw new Error(`functions.${name} must be an object`);
+        for (const key of Object.keys(rule)) {
+          if (key !== "layout" && key !== "multiline") throw new Error(`functions.${name}: unknown key(s) ${key}`);
+        }
+        if ("layout" in rule && !VALID_LAYOUTS.has(rule.layout)) {
+          throw new Error(`functions.${name}.layout must be one of ${[...VALID_LAYOUTS].sort().join(", ")}`);
+        }
+        if ("multiline" in rule && !VALID_MULTILINE.has(rule.multiline)) {
+          throw new Error(`functions.${name}.multiline must be one of ${[...VALID_MULTILINE].sort().join(", ")}`);
+        }
+        const key = name.toLowerCase();
+        functions[key] = Object.assign(functions[key] || {}, rule);
+      }
+    }
+    style.functions = functions;
+    return style;
+  }
+
+  // ----------------------------------------------------------- printer
+
+  function makePrinter(style) {
+    const semi = style.space_before_semicolon ? " ;" : ";";
+    const ind = (level) => style.indent.repeat(level);
+    const opText = (op) =>
+      KEYWORD_OPS.has(op.toLowerCase()) && style.lowercase_keywords ? op.toLowerCase() : op;
+    const rule = (name) => style.functions[name.toLowerCase()] || {};
+    const forced = (nd) =>
+      nd.t === "call" && nd.args.length > 0 && rule(nd.name).multiline === "always";
+
+    function emit(nd, level, prefix, suffix) {
+      prefix = prefix || "";
+      suffix = suffix || "";
+      const indent = ind(level);
+      const lines = nd.leading.map((c) => indent + c.text);
+      const body = inlineBody(nd);
+      if (body !== null && !forced(nd) && (indent + prefix + body + suffix).length <= style.width) {
+        lines.push(indent + prefix + body + suffix);
+      } else {
+        lines.push(...multi(nd, level, prefix, suffix));
+      }
+      if (nd.trailing.length) {
+        lines[lines.length - 1] += " " + nd.trailing.map((c) => c.text).join(" ");
+      }
+      lines.push(...nd.post.map((c) => indent + c.text));
+      return lines;
+    }
+
+    function inline(nd) {
+      return hasComments(nd) ? null : inlineBody(nd);
+    }
+
+    function inlineBody(nd) {
+      const join = semi + " ";
+      switch (nd.t) {
+        case "lit":
+          return nd.text;
+        case "un": {
+          const inner = inline(nd.operand);
+          if (inner === null) return null;
+          const op = opText(nd.op);
+          return /^[a-z]+$/i.test(op) ? `${op} ${inner}` : `${op}${inner}`;
+        }
+        case "bin": {
+          const left = inline(nd.left);
+          const right = inline(nd.right);
+          if (left === null || right === null) return null;
+          return `${left} ${opText(nd.op)} ${right}`;
+        }
+        case "paren": {
+          const inner = inline(nd.inner);
+          return inner === null ? null : `( ${inner} )`;
+        }
+        case "rep": {
+          if (hasComments(nd.target)) return null;
+          const index = inline(nd.index);
+          return index === null ? null : `${nd.target.text}[${index}]`;
+        }
+        case "assign": {
+          if (hasComments(nd.target)) return null;
+          const value = inline(nd.value);
+          return value === null ? null : `${nd.target.text} = ${value}`;
+        }
+        case "brackets": {
+          const parts = nd.items.map(inline);
+          if (parts.some((p) => p === null)) return null;
+          const tail = nd.trailingSemi ? semi : "";
+          return parts.length ? `[ ${parts.join(join)}${tail} ]` : "[ ]";
+        }
+        case "call": {
+          if (forced(nd)) return null;
+          const parts = nd.args.map(inline);
+          if (parts.some((p) => p === null)) return null;
+          const tail = nd.trailingSemi ? semi : "";
+          return parts.length ? `${nd.name} ( ${parts.join(join)}${tail} )` : `${nd.name} ( )`;
+        }
+        default:
+          throw new Error(`unknown node ${nd.t}`);
+      }
+    }
+
+    function multi(nd, level, prefix, suffix) {
+      const indent = ind(level);
+
+      if (nd.t === "lit") return [indent + prefix + nd.text + suffix];
+
+      if (nd.t === "un") {
+        const op = opText(nd.op);
+        const glued = prefix + op + (/^[a-z]+$/i.test(op) ? " " : "");
+        return emit(nd.operand, level, glued, suffix);
+      }
+
+      if (nd.t === "paren") {
+        return [indent + prefix + "(", ...emit(nd.inner, level + 1), indent + ")" + suffix];
+      }
+
+      if (nd.t === "rep") {
+        const lines = nd.target.leading.map((c) => indent + c.text);
+        lines.push(indent + prefix + nd.target.text + "[");
+        lines.push(...emit(nd.index, level + 1));
+        lines.push(indent + "]" + suffix);
+        return lines;
+      }
+
+      if (nd.t === "bin") {
+        const terms = [];
+        flatten(nd, terms);
+        let lines = emit(terms[0][1], level, prefix, "");
+        const rest = terms.slice(1);
+        rest.forEach(([op, term], idx) => {
+          const last = idx === rest.length - 1;
+          lines = lines.concat(emit(term, level, opText(op) + " ", last ? suffix : ""));
+        });
+        return lines;
+      }
+
+      if (nd.t === "assign") {
+        const lines = nd.target.leading.map((c) => indent + c.text);
+        const head = indent + prefix + nd.target.text + " =";
+        const value = inline(nd.value);
+        if (value !== null && (head + " " + value + suffix).length <= style.width) {
+          lines.push(head + " " + value + suffix);
+          return lines;
+        }
+        lines.push(head);
+        lines.push(...emit(nd.value, level + 1, "", suffix));
+        return lines;
+      }
+
+      if (nd.t === "brackets") {
+        return [indent + prefix + "[", ...bracketItems(nd, level + 1, false), indent + "]" + suffix];
+      }
+
+      if (nd.t === "call") {
+        const layout = rule(nd.name).layout || "args";
+        if (layout === "let" && nd.args.length === 2 && nd.args[0].t === "brackets") {
+          return multiLet(nd, level, prefix, suffix);
+        }
+        if (layout === "while" && nd.args.length === 4 && nd.args[0].t === "brackets" && nd.args[2].t === "brackets") {
+          return multiWhile(nd, level, prefix, suffix);
+        }
+        if (layout === "pairs" && nd.args.length >= 3) {
+          return multiCase(nd, level, prefix, suffix);
+        }
+        if (layout === "leading" && nd.args.length >= 2) {
+          return multiLeading(nd, level, prefix, suffix);
+        }
+        return multiCall(nd, level, prefix, suffix);
+      }
+
+      throw new Error(`unknown node ${nd.t}`);
+    }
+
+    function flatten(nd, out) {
+      const left = nd.left;
+      if (
+        left.t === "bin" &&
+        !hasComments(left) &&
+        PRECEDENCE[left.op.toLowerCase()] === PRECEDENCE[nd.op.toLowerCase()]
+      ) {
+        flatten(left, out);
+      } else {
+        out.push([null, left]);
+      }
+      out.push([nd.op, nd.right]);
+    }
+
+    function bracketItems(nd, level, blank) {
+      const lines = [];
+      const lastSfx = nd.trailingSemi ? semi : "";
+      nd.items.forEach((item, i) => {
+        if (blank && i > 0) lines.push("");
+        const sfx = i < nd.items.length - 1 ? semi : lastSfx;
+        lines.push(...emit(item, level, "", sfx));
+      });
+      return lines;
+    }
+
+    function multiLet(call, level, prefix, suffix) {
+      const [decls, result] = call.args;
+      const blank = style.let_blank_lines;
+      const lines = [ind(level) + prefix + call.name + " ( ["];
+      lines.push(...decls.leading.map((c) => ind(level + 1) + c.text));
+      if (blank) lines.push("");
+      lines.push(...bracketItems(decls, level + 1, blank));
+      lines.push(...decls.trailing.concat(decls.post).map((c) => ind(level + 1) + c.text));
+      if (blank) lines.push("");
+      lines.push(ind(level) + "]" + semi);
+      lines.push(...emit(result, level + 1, "", call.trailingSemi ? semi : ""));
+      lines.push(ind(level) + ")" + suffix);
+      return lines;
+    }
+
+    function multiLeading(call, level, prefix, suffix) {
+      const indent = ind(level);
+      const first = call.args[0];
+      const head = inline(first);
+      let lines;
+      if (head !== null && (indent + prefix + call.name + " ( " + head).length <= style.width) {
+        lines = [indent + prefix + call.name + " ( " + head];
+      } else {
+        lines = emit(first, level, prefix + call.name + " ( ", "");
+      }
+      const rest = call.args.slice(1);
+      rest.forEach((arg, i) => {
+        const sfx = call.trailingSemi && i === rest.length - 1 ? semi : "";
+        lines.push(...emit(arg, level + 1, "; ", sfx));
+      });
+      lines.push(indent + ")" + suffix);
+      return lines;
+    }
+
+    function multiWhile(call, level, prefix, suffix) {
+      const [init, condition, logic, result] = call.args;
+      const lines = [ind(level) + prefix + call.name + " ("];
+      for (const block of [init, logic]) {
+        lines.push(...block.leading.map((c) => ind(level + 1) + c.text));
+        lines.push(ind(level) + "[");
+        lines.push(...bracketItems(block, level + 1, false));
+        lines.push(...block.trailing.concat(block.post).map((c) => ind(level + 1) + c.text));
+        lines.push(ind(level) + "]" + semi);
+        if (block === init) lines.push(...emit(condition, level + 1, "", semi));
+      }
+      lines.push(...emit(result, level + 1, "", call.trailingSemi ? semi : ""));
+      lines.push(ind(level) + ")" + suffix);
+      return lines;
+    }
+
+    function multiCase(call, level, prefix, suffix) {
+      const indent1 = ind(level + 1);
+      const args = call.args;
+      const tail = call.trailingSemi ? semi : "";
+      const lines = [ind(level) + prefix + call.name + " ("];
+      let i = 0;
+      while (i < args.length) {
+        if (i === args.length - 1) {
+          lines.push(...emit(args[i], level + 1, "", tail));
+          i += 1;
+          continue;
+        }
+        const cond = args[i];
+        const value = args[i + 1];
+        const more = i + 2 < args.length;
+        const pairSfx = more ? semi : tail;
+        const c = inline(cond);
+        const v = inline(value);
+        if (c !== null && v !== null && (indent1 + c + semi + " " + v + pairSfx).length <= style.width) {
+          lines.push(indent1 + c + semi + " " + v + pairSfx);
+        } else {
+          lines.push(...emit(cond, level + 1, "", semi));
+          lines.push(...emit(value, level + 1, "", pairSfx));
+        }
+        i += 2;
+      }
+      lines.push(ind(level) + ")" + suffix);
+      return lines;
+    }
+
+    function multiCall(call, level, prefix, suffix) {
+      const lastSfx = call.trailingSemi ? semi : "";
+      const lines = [ind(level) + prefix + call.name + " ("];
+      call.args.forEach((arg, i) => {
+        const sfx = i < call.args.length - 1 ? semi : lastSfx;
+        lines.push(...emit(arg, level + 1, "", sfx));
+      });
+      lines.push(ind(level) + ")" + suffix);
+      return lines;
+    }
+
+    return { format: (nd) => emit(nd, 0).join("\n") + "\n" };
+  }
+
+  // -------------------------------------------------------------- lint
+
+  function lintNode(nd, style, issues) {
+    switch (nd.t) {
+      case "call":
+        if (nd.name.toLowerCase() === "let" && nd.args.length === 2 && nd.args[0].t === "brackets") {
+          checkLet(nd, style, issues);
+        }
+        for (const arg of nd.args) lintNode(arg, style, issues);
+        break;
+      case "bin":
+        lintNode(nd.left, style, issues);
+        lintNode(nd.right, style, issues);
+        break;
+      case "un":
+        lintNode(nd.operand, style, issues);
+        break;
+      case "paren":
+        lintNode(nd.inner, style, issues);
+        break;
+      case "brackets":
+        for (const item of nd.items) lintNode(item, style, issues);
+        break;
+      case "assign":
+        lintNode(nd.value, style, issues);
+        break;
+      case "rep":
+        lintNode(nd.index, style, issues);
+        break;
+    }
+  }
+
+  function checkLet(call, style, issues) {
+    const items = call.args[0].items;
+    const name = style.result_name;
+
+    const last = items.length ? items[items.length - 1] : null;
+    if (!(last && last.t === "assign" && last.target.text === name)) {
+      issues.push(["let-explicit-result", `Let should define \`${name}\` as its final variable`]);
+    }
+    const result = call.args[1];
+    if (!(result.t === "lit" && result.kind === "NAME" && result.text === name)) {
+      issues.push(["let-explicit-result", `Let should return \`${name}\`, not an inline expression`]);
+    }
+
+    const pattern = new RegExp(style.local_variable_pattern);
+    for (const item of items) {
+      if (item.t === "assign" && !pattern.test(item.target.text)) {
+        issues.push(["variable-naming", `variable \`${item.target.text}\` does not match ${style.local_variable_pattern}`]);
+      }
+    }
+  }
+
+  // --------------------------------------------------------------- api
+
+  function signature(source) {
+    const code = [];
+    const comments = [];
+    for (const tok of tokenize(source)) {
+      for (const c of tok.pre) comments.push(c.text);
+      if (tok.kind !== "EOF") {
+        code.push(tok.kind + " " + (tok.kind === "OP" ? tok.text.toLowerCase() : tok.text));
+      }
+    }
+    return JSON.stringify([code, comments]);
+  }
+
+  function formatCalc(source, style) {
+    style = style || makeStyle({});
+    const tokens = tokenize(source);
+    if (tokens.length === 1) return source; // comments only - keep as is
+    const root = parse(tokens);
+    const out = makePrinter(style).format(root);
+    if (signature(source) !== signature(out)) {
+      throw new FormatSafetyError("formatting would alter the token stream; refusing (please report this input)");
+    }
+    return out;
+  }
+
+  function lintCalc(source, style) {
+    style = style || makeStyle({});
+    const tokens = tokenize(source);
+    if (tokens.length === 1) return []; // comments only - nothing to lint
+    const issues = [];
+    lintNode(parse(tokens), style, issues);
+    return issues;
+  }
+
+  globalThis.FMSTYLE = {
+    tokenize, parse, makeStyle, formatCalc, lintCalc,
+    LexError, ParseError, FormatSafetyError,
+  };
+})();
+/* fmstyle-engine-end */
+</script>
+
+<script>
+(function () {
+  "use strict";
+  const { formatCalc, lintCalc, makeStyle } = globalThis.FMSTYLE;
+  const $ = (id) => document.getElementById(id);
+
+  // Named presets - keep in sync with fmstyle/presets.py
+  const UI_PRESETS = {
+    oogi: {
+      indent: 4,
+      width: 96,
+      let_blank_lines: true,
+      lowercase_keywords: true,
+      space_before_semicolon: true,
+      result_name: "result",
+      local_variable_pattern: "^[_a-z][A-Za-z0-9]*$",
+      functions: {
+        let: { layout: "let", multiline: "always" },
+        while: { layout: "while", multiline: "always" },
+        case: { layout: "pairs" },
+        jsonsetelement: { layout: "leading", multiline: "always" },
+      },
+    },
+    compact: {
+      indent: "tab",
+      width: 96,
+      let_blank_lines: false,
+      lowercase_keywords: true,
+      space_before_semicolon: true,
+      result_name: "result",
+      local_variable_pattern: "^_?[a-zA-Z][A-Za-z0-9_]*$",
+      functions: {
+        let: { layout: "let", multiline: "always" },
+        while: { layout: "while", multiline: "always" },
+        case: { layout: "pairs" },
+      },
+    },
+  };
+  const DEFAULT_CFG = UI_PRESETS.oogi;
+
+  const SAMPLE =
+    'Let([clientName=Trim(CLI::Name);greeting="Beste "&clientName;' +
+    'result=greeting&¶&"Met vriendelijke groeten"];result)';
+
+  $("cfg").value = JSON.stringify(DEFAULT_CFG, null, 2);
+  $("input").value = SAMPLE;
+
+  let lastGood = "";
+
+  function readConfig() {
+    const parsed = JSON.parse($("cfg").value);
+    // reflect quick controls
+    const v = parsed.indent;
+    $("indentSel").value = v === "tab" ? "tab" : v === 2 ? "2" : "4";
+    $("widthInp").value = parsed.width ?? 96;
+    return makeStyle(parsed);
+  }
+
+  function setStatus(chips) {
+    $("status").innerHTML = "";
+    for (const [cls, text] of chips) {
+      const el = document.createElement("span");
+      el.className = "chip " + cls;
+      el.textContent = text;
+      $("status").appendChild(el);
+    }
+  }
+
+  function renderLint(issues) {
+    const box = $("lint");
+    if (!issues.length) { box.style.display = "none"; box.innerHTML = ""; return; }
+    const ul = document.createElement("ul");
+    for (const [rule, message] of issues) {
+      const li = document.createElement("li");
+      const b = document.createElement("b");
+      b.textContent = rule;
+      li.appendChild(b);
+      li.appendChild(document.createTextNode(" — " + message));
+      ul.appendChild(li);
+    }
+    box.innerHTML = "";
+    box.appendChild(ul);
+    box.style.display = "block";
+  }
+
+  function refresh() {
+    const source = $("input").value;
+    let style;
+    try {
+      style = readConfig();
+    } catch (e) {
+      setStatus([["err", "style pack: " + e.message]]);
+      return;
+    }
+    if (!source.trim()) {
+      $("outcode").textContent = "";
+      $("output").classList.remove("stale");
+      setStatus([]);
+      renderLint([]);
+      return;
+    }
+    try {
+      const out = formatCalc(source, style);
+      lastGood = out;
+      $("outcode").textContent = out;
+      $("output").classList.remove("stale");
+      const issues = lintCalc(source, style);
+      const lines = out.split("\n").length - 1;
+      const chips = [["ok", `Formatted · ${lines} line${lines === 1 ? "" : "s"} · token-safe ✓`]];
+      if (issues.length) chips.push(["warn", `${issues.length} guideline finding${issues.length === 1 ? "" : "s"}`]);
+      setStatus(chips);
+      renderLint(issues);
+    } catch (e) {
+      $("output").classList.add("stale");
+      setStatus([["err", e.message]]);
+      renderLint([]);
+    }
+  }
+
+  let timer = null;
+  const schedule = () => { clearTimeout(timer); timer = setTimeout(refresh, 150); };
+
+  $("input").addEventListener("input", schedule);
+  $("cfg").addEventListener("input", () => {
+    $("presetSel").value = "custom";
+    schedule();
+  });
+
+  $("presetSel").addEventListener("change", () => {
+    const name = $("presetSel").value;
+    if (name in UI_PRESETS) {
+      $("cfg").value = JSON.stringify(UI_PRESETS[name], null, 2);
+      refresh();
+    }
+  });
+
+  $("indentSel").addEventListener("change", () => {
+    try {
+      const cfg = JSON.parse($("cfg").value);
+      const v = $("indentSel").value;
+      cfg.indent = v === "tab" ? "tab" : Number(v);
+      $("cfg").value = JSON.stringify(cfg, null, 2);
+      $("presetSel").value = "custom";
+      refresh();
+    } catch { /* config invalid; refresh() will surface it */ }
+  });
+
+  $("widthInp").addEventListener("change", () => {
+    try {
+      const cfg = JSON.parse($("cfg").value);
+      cfg.width = Number($("widthInp").value) || 96;
+      $("cfg").value = JSON.stringify(cfg, null, 2);
+      $("presetSel").value = "custom";
+      refresh();
+    } catch { /* config invalid */ }
+  });
+
+  $("loadCfgBtn").addEventListener("click", () => $("cfgFile").click());
+  $("cfgFile").addEventListener("change", async () => {
+    const file = $("cfgFile").files[0];
+    if (!file) return;
+    $("cfg").value = await file.text();
+    $("presetSel").value = "custom";
+    document.querySelector("details.cfg").open = true;
+    refresh();
+  });
+
+  $("copyBtn").addEventListener("click", async () => {
+    const text = $("outcode").textContent || lastGood;
+    if (!text) return;
+    await navigator.clipboard.writeText(text);
+    const btn = $("copyBtn");
+    const old = btn.textContent;
+    btn.textContent = "Copied ✓";
+    setTimeout(() => (btn.textContent = old), 1200);
+  });
+
+  refresh();
+})();
+</script>
+</body>
+</html>

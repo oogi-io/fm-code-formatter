@@ -1,0 +1,31 @@
+Let (
+    [ // Before While loop; sets line 1.0 of result
+        it1 = "a"; // Defined in Let's scope
+        it2 = 1; // Defined in Let's scope
+        out = "1.0 " & it1 & " " & it2 & ¶
+    ];
+    While
+    (
+        [ // initialVariables; sets lines 2.0 and 3.0 of result
+            i = 0;
+            out = out & "2.0 " & it1 & " " & it2 & ¶;
+            it1 = "b"; // Defined in While's scope
+            out = out & "3.0 " & it1 & " " & it2 & ¶
+        ];
+        // Condition
+        i < 2;
+        [ // logic; sets lines 4.x and 5.x of result
+          // Variables defined in the logic parameter in previous passes
+          // through the loop are deleted at this point
+            i = i + 1;
+            out = out & "4." & i & " " & it1 & " " & it2 & ¶;
+            it1 = "c"; // Reused in While's scope
+            it2 = 2; // Redefined in While's scope
+            out = out & "5." & i & " " & it1 & " " & it2 & ¶
+        ];
+        // result; sets line 6.0 of result
+        out & "6.0 " & it1 & " " & it2 & ¶
+    )
+    // After While loop; sets line 7.0 of result
+    & "7.0 " & it1 & " " & it2 & ¶
+)

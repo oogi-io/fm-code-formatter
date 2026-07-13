@@ -1,0 +1,1 @@
+If ( $$~DISABLE_FLAG or Triggers.AreDisabled ; #ResultJSON ( 0 ; Session.Get ( "msg" ) ; "" ) ; Let ( [ _step = Config::WizardStep_g[113] ; _amount = LineItems::TotalPrice_c ; result = _step & " " & GetAsNumber ( _amount ) ] ; result ) )

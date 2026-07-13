@@ -1,0 +1,1 @@
+Let([customerName=Trim(Contacts::FullName);greeting=Let([_hour=Hour(Get(CurrentTime));result=Case(_hour<12;"Good morning";_hour<18;"Good afternoon";"Good evening")];result);result=greeting&" "&customerName&","&¶&"Kind regards"];result)

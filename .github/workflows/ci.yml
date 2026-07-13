@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Python tests
+        run: python3 tests/test_fmstyle.py
+
+      - name: Regenerate parity fixtures
+        run: python3 tests/gen_parity_fixtures.py
+
+      - name: Fixtures must be committed up to date
+        run: git diff --exit-code tests/parity_fixtures.json
+
+      - name: JS <-> Python parity
+        run: node tests/test_parity.mjs

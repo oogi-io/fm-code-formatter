@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+
+# never commit client artifacts or secrets
+*.db
+*.fmp12
+*_fmp12.xml
+Summary.xml
+.env
+.env.*

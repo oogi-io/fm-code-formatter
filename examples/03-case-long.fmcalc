@@ -1,0 +1,1 @@
+Case ( $_status = kStatus.active ; Contracts::EndDate ; $_status = kStatus.leaveA ; Contracts::EndDate ; $_status = kStatus.leaveB ; Contracts::EndDate ; $_status = kStatus.pending ; PrevContracts::EndDate ; $_status = kStatus.former ; PrevContracts::EndDate ; )

@@ -1,0 +1,1 @@
+Let ( [ CustomerName = Trim ( Contacts::FullName ) ; TempResult = CustomerName & " (customer)" ] ; TempResult & " - processed" )

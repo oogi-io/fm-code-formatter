@@ -1,0 +1,28 @@
+[project]
+name = "fmstyle"
+dynamic = ["version"]
+description = "Deterministic formatter and shareable style engine for FileMaker calculations"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "OOGI BV" }]
+keywords = ["filemaker", "formatter", "calculation", "style", "lint"]
+
+[project.urls]
+Homepage = "https://github.com/oogi-io/fm-code-formatter"
+
+[project.scripts]
+fmstyle = "fmstyle.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["fmstyle"]
+
+[tool.setuptools.dynamic]
+version = { attr = "fmstyle.__version__" }
+
+[tool.setuptools.package-data]
+fmstyle = ["web/index.html", "skill/SKILL.md", "presets/*.json"]
