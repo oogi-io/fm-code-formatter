@@ -75,8 +75,8 @@
   "lint": []
  },
  {
-  "source": "${Sale Price} - Rep 5¢ Commission",
-  "expected": "${Sale Price} - Rep 5¢ Commission\n",
+  "source": "${Sale Price} - Fee 5¢ Surcharge",
+  "expected": "${Sale Price} - Fee 5¢ Surcharge\n",
   "lint": []
  },
  {
@@ -218,8 +218,8 @@
   "lint": []
  },
  {
-  "source": "Rep 5¢ Commission + Carafe 0.4.0 Bundle::Bundle",
-  "expected": "Rep 5¢ Commission + Carafe 0.4.0 Bundle::Bundle\n",
+  "source": "Fee 5¢ Surcharge + Demo 0.4.0 Kit::Bundle",
+  "expected": "Fee 5¢ Surcharge + Demo 0.4.0 Kit::Bundle\n",
   "lint": []
  },
  {

@@ -62,7 +62,7 @@ SAMPLES = [
     "Config::WizardStep_g[113] & $var[$i + 1]",
     "Table~X::Field~extra & kStatus.active",
     'Let ( [ trigger = _trigger.lastStep ; result = Case ( a ; b ; ) ] ; result )',
-    "${Sale Price} - Rep 5¢ Commission",
+    "${Sale Price} - Fee 5¢ Surcharge",
 ]
 
 
@@ -225,8 +225,8 @@ def test_real_world_names():
         '#ResultJSON ( 0 ; "" ; "" )',
         "Triggers.Disable",
         "$sub.errorCode",
-        "Carafe 0.4.0 Bundle::Bundle",
-        "Rep 5¢ Commission + 1",
+        "Demo 0.4.0 Kit::Bundle",
+        "Fee 5¢ Surcharge + 1",
     ):
         assert format_calc(src) == src + "\n"
 

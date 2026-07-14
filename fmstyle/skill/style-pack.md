@@ -44,13 +44,26 @@ not improvise keys for it.
 | Repetition brackets | — | compact `field[2]` | fixed |
 | Function-name casing | — | kept as written | fixed |
 | Blank lines outside Let | — | none inserted | fixed |
+| **Column alignment** (aligned `=` / comments in Let blocks) | — | **not supported — normalized to single spaces**; if a team aligns columns, say so explicitly before reformatting their code | fixed |
 
 Lint rules available (each opt-in; `true` = defaults, object = parameters):
 
 | Rule | Checks | Parameters |
 |---|---|---|
 | `let-explicit-result` | Let defines a final result variable and returns it bare | `result_name` (default `"result"`) |
-| `variable-naming` | Let-local names match a pattern | `pattern` (regex) |
+| `variable-naming` | **Let-local names only** (not While locals, not `$`/`$$` variables — for now) | `pattern` (regex) |
+
+**Acronym policy** (`clientID` vs `clientId`) is expressible through `pattern`
+today — ask the team which they write, then use the matching recipe:
+
+- camelCase, acronyms capitalized (`clientId`, `parentUrl`):
+  `"^_?[a-z]+([A-Z][a-z0-9]+)*$"`
+- camelCase, acronyms uppercase (`clientID`, `parentURL`):
+  `"^_?[a-z]+([A-Z][a-z0-9]*|[A-Z]{2,})*$"`
+
+Named conventions (`camelCase` / `snake_case` + an `acronyms` knob) are on the
+roadmap; until then the regex is the mechanism — include a comment in the
+team's docs saying which convention the pattern encodes.
 
 ## Three ways to form the pack
 
@@ -76,6 +89,8 @@ or just a habit? Encode only what you observe; leave the rest at defaults.
    one — `layout: "leading"` gives it the leading-semicolon shape)?
 7. Practice rules, only if they volunteer them: explicit result variable?
    a naming convention for locals?
+8. If they have a naming convention: acronyms uppercase (`clientID`) or
+   capitalized (`clientId`)? (Pick the matching pattern recipe above.)
 
 ## The proving loop — a pack is not done until it survives this
 

@@ -39,3 +39,7 @@ will fail if it is stale (i.e. if you changed the engine but did not regenerate)
   fixtures — use invented names (`Contacts::FullName`, `kStatus.active`, …).
 - Add a test for every behaviour change, and a parity fixture for anything the web
   app must reproduce.
+- **Licensing of contributions:** by submitting a contribution you license it
+  under this project's MIT license and additionally grant OOGI BV the right to
+  relicense it as part of the project. (Keeps future licensing decisions
+  possible without chasing every past contributor.)

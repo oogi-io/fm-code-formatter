@@ -66,7 +66,7 @@ CASES: list[dict] = (
         # real-world syntax discovered by the DDR corpus audit
         {"source": '$$~DISABLETRIGGERS or #ScriptResultJSON ( 0 ; Session.GetValue ( "x" ) ; "" )'},
         {"source": "Config::WizardStep_g[ 113 ] & $var[$i + 1]"},
-        {"source": "Rep 5¢ Commission + Carafe 0.4.0 Bundle::Bundle"},
+        {"source": "Fee 5¢ Surcharge + Demo 0.4.0 Kit::Bundle"},
         {"source": "Case ( a ; b ; )"},
         {"source": "Let ( [ x = 1 ; ] ; x )"},
         {"source": "Let ( [ _applied = not IsEmpty ( x ) ; result = _applied ] ; result )"},

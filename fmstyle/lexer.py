@@ -45,7 +45,7 @@ def _is_name_char(ch: str) -> bool:
     # ~ # . appear in real-world FileMaker names: $$~DISABLETRIGGERS,
     # #ScriptResultJSON, Triggers.Disable, $sub.errorCode, Field~extra.
     # Any non-ASCII char that is not an operator is a name char too
-    # (field names like "Rep 5¢ Commission" exist in the wild).
+    # (field names like "Fee 5¢ Surcharge" exist in the wild).
     if ch.isalnum() or ch in "_~#.":
         return True
     return ord(ch) > 127 and ch not in UNICODE_OPS

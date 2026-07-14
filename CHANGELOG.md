@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.1 — 2026-07-13
+
+Housekeeping before the repository goes public.
+
+### Changed
+- Example strings in docs/tests replaced with fully synthetic names.
+- Authoring guide: acronym-policy recipes for `variable-naming`
+  (`clientId` vs `clientID`), explicit scope note (Let locals only), and
+  column alignment documented as a fixed (unsupported) dimension.
+
+### Added
+- `SECURITY.md` (private reporting contact).
+- Trademark notice (FileMaker is a trademark of Claris International Inc.).
+- Contribution licensing note in CONTRIBUTING.md.
+
 ## 0.3.0 — 2026-07-13
 
 The style pack now describes *your* style instead of assuming one.
@@ -14,8 +29,8 @@ The style pack now describes *your* style instead of assuming one.
   `"preserve"` (legacy key still accepted).
 - `space_before_semicolon` moved to `spacing.before_semicolon` (legacy key
   still accepted).
-- Preset `soliant` replaced by neutral `compact` (tab indent, compact Let
-  blocks, no lint opinions).
+- An early third-party-named preset was replaced by the neutral `compact`
+  (tab indent, compact Let blocks, no lint opinions).
 
 ### Added
 - **`spacing`** — `inside_parens` (`Name ( x )` vs `Name (x)`), `before_paren`

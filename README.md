@@ -200,7 +200,7 @@ The remainder is almost entirely DDR-export artifacts (several calcs concatenate
 into one layout-object entry, `<Field Missing>` placeholders) which the formatter
 correctly *refuses* rather than mangles. The audit drove real grammar fixes:
 `~`/`#`/dotted/unicode names (`$$~DISABLETRIGGERS`, dotted custom-function
-namespaces, `Rep 5¢ Commission`), repetition references (`field[11]`), `x = not y`
+namespaces, `Fee 5¢ Surcharge`), repetition references (`field[11]`), `x = not y`
 assignments, trailing semicolons (`Case ( a ; b ; )`), and commented-out calcs. It
 also inventories which built-in and custom functions a solution uses
 (`--functions`) — input for choosing per-function rules.
@@ -279,3 +279,6 @@ fmstyle/
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+FileMaker is a trademark of Claris International Inc. This project is
+independent and not affiliated with or endorsed by Claris.
