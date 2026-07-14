@@ -60,7 +60,7 @@ Pure standard library, Python 3.10+, no dependencies.
 
 ## Web app (no install)
 
-Open `fmstyle/web/index.html` in any browser (or host it as a static page). Paste a
+**Live at [fmstyle.dev](https://fmstyle.dev)** — or open `fmstyle/web/index.html` locally. Paste a
 calculation, it formats live, copy the result. Load your `fmstyle.json` to format in
 your house style; quick controls for indent and width. Everything runs **entirely
 client-side — nothing is uploaded** (no network requests, no CDN, no analytics).

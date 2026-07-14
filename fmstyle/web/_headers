@@ -1,0 +1,8 @@
+# Cloudflare Pages edge headers. The app is fully client-side and makes no
+# network requests; connect-src 'none' guarantees the "nothing leaves your
+# machine" promise at the edge even if script injection ever slipped in.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; connect-src 'none'

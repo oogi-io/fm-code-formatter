@@ -9,7 +9,8 @@ authors = [{ name = "OOGI BV" }]
 keywords = ["filemaker", "formatter", "calculation", "style", "lint"]
 
 [project.urls]
-Homepage = "https://github.com/oogi-io/fm-code-formatter"
+Homepage = "https://fmstyle.dev"
+Repository = "https://github.com/oogi-io/fm-code-formatter"
 
 [project.scripts]
 fmstyle = "fmstyle.cli:main"
