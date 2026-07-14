@@ -1341,8 +1341,8 @@
   const DEFAULT_CFG = UI_PRESETS.oogi;
 
   const SAMPLE =
-    'Let([clientName=Trim(CLI::Name);greeting="Beste "&clientName;' +
-    'result=greeting&¶&"Met vriendelijke groeten"];result)';
+    'Let([customerName=Trim(Contacts::FullName);greeting="Dear "&customerName;' +
+    'result=greeting&¶&"Kind regards"];result)';
 
   $("cfg").value = JSON.stringify(DEFAULT_CFG, null, 2);
   $("input").value = SAMPLE;
