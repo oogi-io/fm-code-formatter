@@ -15,7 +15,7 @@ from .parser import ParseError, Parser
 from .printer import Printer
 from .rules import lint as _lint
 
-__version__ = "0.3.1"
+__version__ = "1.0.0"
 
 __all__ = [
     "format_calc",

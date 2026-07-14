@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.0 — 2026-07-14
+
+First stable release — same code as 0.3.1, now with a compatibility promise:
+
+- **The style-pack schema is stable.** Packs written against the documented
+  `fmstyle.json` options (formatting top level + opt-in `lint` section) will
+  keep working across 1.x releases; 0.2.x legacy keys remain accepted.
+- The token-safety guarantee is validated against 136,000+ calculations from
+  two independent production solutions.
+- Repository is public from this release onward.
+
 ## 0.3.1 — 2026-07-13
 
 Housekeeping before the repository goes public.
