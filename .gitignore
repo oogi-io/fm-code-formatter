@@ -12,3 +12,4 @@ build/
 Summary.xml
 .env
 .env.*
+.wrangler/
