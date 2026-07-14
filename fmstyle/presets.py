@@ -17,11 +17,11 @@ from .config import Style
 
 PRESETS: dict[str, dict] = {
     "oogi": {
-        "description": "OOGI BV FileMaker style - 4-space indent, blank-line Let "
+        "description": "OOGI BV FileMaker style - tab indent, blank-line Let "
         "blocks, leading-semicolon JSONSetElement; lint: explicit result, "
         "camelCase locals",
         "style": {
-            "indent": 4,
+            "indent": "tab",
             "width": 96,
             "let_blank_lines": True,
             "keyword_case": "lower",

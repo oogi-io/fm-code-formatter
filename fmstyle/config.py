@@ -89,7 +89,7 @@ def _default_spacing() -> dict:
 
 @dataclass
 class Style:
-    indent: str = "    "
+    indent: str = "\t"
     width: int = 96
     let_blank_lines: bool = True
     keyword_case: str = "lower"        # lower | upper | preserve

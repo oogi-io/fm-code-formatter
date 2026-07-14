@@ -1,12 +1,12 @@
 [
  {
   "source": "Let ( [ _foo = \"\" ; result = _foo ] ; result )",
-  "expected": "Let ( [\n\n    _foo = \"\" ;\n\n    result = _foo\n\n] ;\n    result\n)\n",
+  "expected": "Let ( [\n\n\t_foo = \"\" ;\n\n\tresult = _foo\n\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
   "source": "While ( [ someList = $someList ; limit = ValueCount ( someList ) ; i = 1 ; result = \"\" ] ; i ≤ limit ; [ value = GetValue ( someList ; i ) ; i = i + 1 ] ; result )",
-  "expected": "While (\n[\n    someList = $someList ;\n    limit = ValueCount ( someList ) ;\n    i = 1 ;\n    result = \"\"\n] ;\n    i ≤ limit ;\n[\n    value = GetValue ( someList ; i ) ;\n    i = i + 1\n] ;\n    result\n)\n",
+  "expected": "While (\n[\n\tsomeList = $someList ;\n\tlimit = ValueCount ( someList ) ;\n\ti = 1 ;\n\tresult = \"\"\n] ;\n\ti ≤ limit ;\n[\n\tvalue = GetValue ( someList ; i ) ;\n\ti = i + 1\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
@@ -31,7 +31,7 @@
  },
  {
   "source": "Let ( [ inner = Let ( [ x = 1 ; result = x ] ; result ) ; result = inner ] ; result )",
-  "expected": "Let ( [\n\n    inner =\n        Let ( [\n\n            x = 1 ;\n\n            result = x\n\n        ] ;\n            result\n        ) ;\n\n    result = inner\n\n] ;\n    result\n)\n",
+  "expected": "Let ( [\n\n\tinner =\n\t\tLet ( [\n\n\t\t\tx = 1 ;\n\n\t\t\tresult = x\n\n\t\t] ;\n\t\t\tresult\n\t\t) ;\n\n\tresult = inner\n\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
@@ -71,7 +71,7 @@
  },
  {
   "source": "Let ( [ trigger = _trigger.lastStep ; result = Case ( a ; b ; ) ] ; result )",
-  "expected": "Let ( [\n\n    trigger = _trigger.lastStep ;\n\n    result = Case ( a ; b ; )\n\n] ;\n    result\n)\n",
+  "expected": "Let ( [\n\n\ttrigger = _trigger.lastStep ;\n\n\tresult = Case ( a ; b ; )\n\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
@@ -81,7 +81,7 @@
  },
  {
   "source": "Let([_foo=\"\";result=_foo];result)",
-  "expected": "Let ( [\n\n    _foo = \"\" ;\n\n    result = _foo\n\n] ;\n    result\n)\n",
+  "expected": "Let ( [\n\n\t_foo = \"\" ;\n\n\tresult = _foo\n\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
@@ -102,7 +102,7 @@
  },
  {
   "source": "Case ( $status = \"open\" ; \"Openstaand dossier\" ; $status = \"closed\" ; \"Afgesloten dossier\" ; $status = \"pending\" ; \"Wachtend op goedkeuring\" ; \"Onbekende status\" )",
-  "expected": "Case (\n    $status = \"open\" ; \"Openstaand dossier\" ;\n    $status = \"closed\" ; \"Afgesloten dossier\" ;\n    $status = \"pending\" ; \"Wachtend op goedkeuring\" ;\n    \"Onbekende status\"\n)\n",
+  "expected": "Case (\n\t$status = \"open\" ; \"Openstaand dossier\" ;\n\t$status = \"closed\" ; \"Afgesloten dossier\" ;\n\t$status = \"pending\" ; \"Wachtend op goedkeuring\" ;\n\t\"Onbekende status\"\n)\n",
   "lint": []
  },
  {
@@ -110,22 +110,22 @@
   "style": {
    "width": 60
   },
-  "expected": "Case (\n    $status = \"open\" ; \"Openstaand dossier\" ;\n    $status = \"closed\" ; \"Afgesloten dossier\" ;\n    $status = \"pending\" ; \"Wachtend op goedkeuring\" ;\n    \"Onbekende status\"\n)\n",
+  "expected": "Case (\n\t$status = \"open\" ; \"Openstaand dossier\" ;\n\t$status = \"closed\" ; \"Afgesloten dossier\" ;\n\t$status = \"pending\" ; \"Wachtend op goedkeuring\" ;\n\t\"Onbekende status\"\n)\n",
   "lint": []
  },
  {
   "source": "Let ( [ // init\n_foo = \"\" ; /* mid */ result = _foo ] ; result ) // done",
-  "expected": "Let ( [\n\n    // init\n    _foo = \"\" ; /* mid */\n\n    result = _foo\n\n] ;\n    result\n)\n// done\n",
+  "expected": "Let ( [\n\n\t// init\n\t_foo = \"\" ; /* mid */\n\n\tresult = _foo\n\n] ;\n\tresult\n)\n// done\n",
   "lint": []
  },
  {
   "source": "Let ( [ x = 1 ] ; x + 1 )",
-  "expected": "Let ( [\n\n    x = 1\n\n] ;\n    x + 1\n)\n",
+  "expected": "Let ( [\n\n\tx = 1\n\n] ;\n\tx + 1\n)\n",
   "lint": []
  },
  {
   "source": "Let ( [ FooBar = 1 ; result = FooBar ] ; result )",
-  "expected": "Let ( [\n\n    FooBar = 1 ;\n\n    result = FooBar\n\n] ;\n    result\n)\n",
+  "expected": "Let ( [\n\n\tFooBar = 1 ;\n\n\tresult = FooBar\n\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
@@ -139,7 +139,7 @@
    "space_before_semicolon": false,
    "let_blank_lines": false
   },
-  "expected": "Let ( [\n    _foo = \"\";\n    result = _foo\n];\n    result\n)\n",
+  "expected": "Let ( [\n\t_foo = \"\";\n\tresult = _foo\n];\n\tresult\n)\n",
   "lint": []
  },
  {
@@ -161,7 +161,7 @@
     }
    }
   },
-  "expected": "If (\n    a ;\n    b ;\n    c\n)\n",
+  "expected": "If (\n\ta ;\n\tb ;\n\tc\n)\n",
   "lint": []
  },
  {
@@ -174,7 +174,7 @@
     }
    }
   },
-  "expected": "Choose (\n    idx ; \"a\" ;\n    \"b\" ; \"c\"\n)\n",
+  "expected": "Choose (\n\tidx ; \"a\" ;\n\t\"b\" ; \"c\"\n)\n",
   "lint": []
  },
  {
@@ -186,7 +186,7 @@
     "getsummary"
    ]
   },
-  "expected": "GetSummary (\n    Total ;\n    Group\n)\n",
+  "expected": "GetSummary (\n\tTotal ;\n\tGroup\n)\n",
   "lint": []
  },
  {
@@ -204,7 +204,7 @@
  },
  {
   "source": "Let ( [ longText = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" & \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\" & \"cccccccccccccccccccccccc\" ; result = longText ] ; result )",
-  "expected": "Let ( [\n\n    longText =\n        \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n        & \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n        & \"cccccccccccccccccccccccc\" ;\n\n    result = longText\n\n] ;\n    result\n)\n",
+  "expected": "Let ( [\n\n\tlongText =\n\t\t\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\t\t& \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n\t\t& \"cccccccccccccccccccccccc\" ;\n\n\tresult = longText\n\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
@@ -229,12 +229,12 @@
  },
  {
   "source": "Let ( [ x = 1 ; ] ; x )",
-  "expected": "Let ( [\n\n    x = 1 ;\n\n] ;\n    x\n)\n",
+  "expected": "Let ( [\n\n\tx = 1 ;\n\n] ;\n\tx\n)\n",
   "lint": []
  },
  {
   "source": "Let ( [ _applied = not IsEmpty ( x ) ; result = _applied ] ; result )",
-  "expected": "Let ( [\n\n    _applied = not IsEmpty ( x ) ;\n\n    result = _applied\n\n] ;\n    result\n)\n",
+  "expected": "Let ( [\n\n\t_applied = not IsEmpty ( x ) ;\n\n\tresult = _applied\n\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
@@ -244,23 +244,23 @@
  },
  {
   "source": "Let (\n    [ // Before While loop\n        it1 = \"a\"; // scope note\n        it2 = 1; // another note\n        out = \"1.0 \" & it1 & ¶\n    ];\n    While (\n        [ i = 0 ; out = out & \"2.0 \" & ¶ ];\n        // Condition\n        i < 2;\n        [ i = i + 1 ; it1 = \"c\" ; out = out & \"5.\" & i & ¶ ];\n        out & \"6.0 \" & ¶\n    )\n    & \"7.0 \" & ¶\n)",
-  "expected": "Let ( [\n\n    // Before While loop\n    it1 = \"a\" ; // scope note\n\n    it2 = 1 ; // another note\n\n    out = \"1.0 \" & it1 & ¶\n\n] ;\n    While (\n    [\n        i = 0 ;\n        out = out & \"2.0 \" & ¶\n    ] ;\n        // Condition\n        i < 2 ;\n    [\n        i = i + 1 ;\n        it1 = \"c\" ;\n        out = out & \"5.\" & i & ¶\n    ] ;\n        out & \"6.0 \" & ¶\n    )\n    & \"7.0 \"\n    & ¶\n)\n",
+  "expected": "Let ( [\n\n\t// Before While loop\n\tit1 = \"a\" ; // scope note\n\n\tit2 = 1 ; // another note\n\n\tout = \"1.0 \" & it1 & ¶\n\n] ;\n\tWhile (\n\t[\n\t\ti = 0 ;\n\t\tout = out & \"2.0 \" & ¶\n\t] ;\n\t\t// Condition\n\t\ti < 2 ;\n\t[\n\t\ti = i + 1 ;\n\t\tit1 = \"c\" ;\n\t\tout = out & \"5.\" & i & ¶\n\t] ;\n\t\tout & \"6.0 \" & ¶\n\t)\n\t& \"7.0 \"\n\t& ¶\n)\n",
   "lint": []
  },
  {
   "source": "Let ( [ it1 = \"a\" ; // scope\nresult = it1 ] ; result )",
-  "expected": "Let ( [\n\n    it1 = \"a\" ; // scope\n\n    result = it1\n\n] ;\n    result\n)\n",
+  "expected": "Let ( [\n\n\tit1 = \"a\" ; // scope\n\n\tresult = it1\n\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
   "source": "If ( x ;\n// note\ni < 2 ; false )",
-  "expected": "If (\n    x ;\n    // note\n    i < 2 ;\n    false\n)\n",
+  "expected": "If (\n\tx ;\n\t// note\n\ti < 2 ;\n\tfalse\n)\n",
   "lint": []
  },
  {
   "source": "JSONSetElement ( \"\" ; [ \"foo\" ; $bar ; JSONString ] ; [ \"s\" ; \"a\" ; JSONString ] )",
   "style": {
-   "indent": 4,
+   "indent": "tab",
    "width": 96,
    "let_blank_lines": true,
    "keyword_case": "lower",
@@ -290,13 +290,13 @@
     }
    }
   },
-  "expected": "JSONSetElement ( \"\"\n    ; [ \"foo\" ; $bar ; JSONString ]\n    ; [ \"s\" ; \"a\" ; JSONString ]\n)\n",
+  "expected": "JSONSetElement ( \"\"\n\t; [ \"foo\" ; $bar ; JSONString ]\n\t; [ \"s\" ; \"a\" ; JSONString ]\n)\n",
   "lint": []
  },
  {
   "source": "Let ( [ _foo = \"\" ; result = _foo ] ; result )",
   "style": {
-   "indent": 4,
+   "indent": "tab",
    "width": 96,
    "let_blank_lines": true,
    "keyword_case": "lower",
@@ -326,7 +326,7 @@
     }
    }
   },
-  "expected": "Let ( [\n\n    _foo = \"\" ;\n\n    result = _foo\n\n] ;\n    result\n)\n",
+  "expected": "Let ( [\n\n\t_foo = \"\" ;\n\n\tresult = _foo\n\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
@@ -384,7 +384,7 @@
     "before_paren": false
    }
   },
-  "expected": "Let([\n\n    _foo = \"\" ;\n\n    result = _foo\n\n] ;\n    result\n)\n",
+  "expected": "Let([\n\n\t_foo = \"\" ;\n\n\tresult = _foo\n\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
@@ -406,7 +406,7 @@
    },
    "width": 20
   },
-  "expected": "Let ( [\n\n    _foo = \"\" ;\n\n    result = _foo\n\n] ;\n    result\n)\n",
+  "expected": "Let ( [\n\n\t_foo = \"\" ;\n\n\tresult = _foo\n\n] ;\n\tresult\n)\n",
   "lint": []
  },
  {
@@ -414,7 +414,7 @@
   "style": {
    "comments": "above"
   },
-  "expected": "Let ( [\n\n    // one\n    x = 1 ;\n\n    result = x\n\n] ;\n    result\n)\n// done\n",
+  "expected": "Let ( [\n\n\t// one\n\tx = 1 ;\n\n\tresult = x\n\n] ;\n\tresult\n)\n// done\n",
   "lint": []
  },
  {
@@ -440,7 +440,7 @@
     "let-explicit-result": true
    }
   },
-  "expected": "Let ( [\n\n    x = 1\n\n] ;\n    x + 1\n)\n",
+  "expected": "Let ( [\n\n\tx = 1\n\n] ;\n\tx + 1\n)\n",
   "lint": [
    "let-explicit-result",
    "let-explicit-result"
@@ -451,7 +451,7 @@
   "style": {
    "result_name": "output"
   },
-  "expected": "Let ( [\n\n    x = 1\n\n] ;\n    x + 1\n)\n",
+  "expected": "Let ( [\n\n\tx = 1\n\n] ;\n\tx + 1\n)\n",
   "lint": [
    "let-explicit-result",
    "let-explicit-result"
@@ -466,7 +466,7 @@
     }
    }
   },
-  "expected": "Let ( [\n\n    BadName = 1 ;\n\n    result = BadName\n\n] ;\n    result\n)\n",
+  "expected": "Let ( [\n\n\tBadName = 1 ;\n\n\tresult = BadName\n\n] ;\n\tresult\n)\n",
   "lint": [
    "variable-naming"
   ]

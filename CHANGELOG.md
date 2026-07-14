@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.1 — 2026-07-14
+
+- **Default indent corrected to tab** (was 4 spaces). The 4-space default was
+  a transcription error against the reference style guide, fixed hours after
+  1.0.0 before any adoption. Packs that set `indent` explicitly are unaffected;
+  `"indent": 4` still gives spaces.
+- The `oogi` preset now specifies `"indent": "tab"` accordingly.
+
 ## 1.0.0 — 2026-07-14
 
 First stable release — same code as 0.3.1, now with a compatibility promise:

@@ -160,7 +160,7 @@ Named, ready-made style packs — pick one in the web app's toolbar or via
 
 | Preset | Highlights |
 |---|---|
-| `oogi` | 4-space indent, blank-line Let blocks, leading-semicolon JSONSetElement; lint: explicit `result`, camelCase locals |
+| `oogi` | tab indent, blank-line Let blocks, leading-semicolon JSONSetElement; lint: explicit `result`, camelCase locals |
 | `compact` | tab indent, compact Let blocks (no blank lines), no lint opinions |
 
 Adding a preset is a PR with one dict in `fmstyle/presets.py` (and the matching

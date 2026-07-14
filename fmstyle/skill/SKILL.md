@@ -66,7 +66,7 @@ per-function shapes) and **lint** (opinionated practice rules, each opt-in):
 
 ```json
 {
-  "indent": 4,
+  "indent": "tab",
   "width": 96,
   "keyword_case": "lower",
   "comments": "preserve",

@@ -15,12 +15,12 @@ GUIDE_LET = 'Let ( [ _foo = "" ; result = _foo ] ; result )'
 
 EXPECTED_LET = """Let ( [
 
-    _foo = "" ;
+	_foo = "" ;
 
-    result = _foo
+	result = _foo
 
 ] ;
-    result
+	result
 )
 """
 
@@ -32,17 +32,17 @@ GUIDE_WHILE = (
 
 EXPECTED_WHILE = """While (
 [
-    someList = $someList ;
-    limit = ValueCount ( someList ) ;
-    i = 1 ;
-    result = ""
+	someList = $someList ;
+	limit = ValueCount ( someList ) ;
+	i = 1 ;
+	result = ""
 ] ;
-    i ≤ limit ;
+	i ≤ limit ;
 [
-    value = GetValue ( someList ; i ) ;
-    i = i + 1
+	value = GetValue ( someList ; i ) ;
+	i = i + 1
 ] ;
-    result
+	result
 )
 """
 
@@ -123,7 +123,7 @@ def test_inline_comment_stays_on_its_declaration():
 def test_leading_comment_keeps_expression_inline():
     # own-line comment before an expression: prints above, expression stays inline
     out = format_calc("If ( x ;\n// note\ni < 2 ; false )")
-    assert "    // note\n    i < 2 ;" in out
+    assert "\t// note\n\ti < 2 ;" in out
 
 
 def test_claris_while_example():
@@ -132,7 +132,7 @@ def test_claris_while_example():
     assert 'it1 = "a" ; // scope note' in out
     assert "it2 = 1 ; // another note" in out
     # condition comment above, condition inline
-    assert "// Condition\n        i < 2 ;" in out
+    assert "// Condition\n\t\ti < 2 ;" in out
     # while result comment above, result inline
     assert '// After' not in out  # (not in this trimmed variant)
     assert format_calc(out) == out  # idempotent
@@ -153,9 +153,10 @@ def test_keywords_lowercased():
     assert format_calc("x AND y OR NOT z") == "x and y or not z\n"
 
 
-def test_tab_indent_config():
-    out = format_calc(GUIDE_LET, Style(indent="\t"))
-    assert "\t_foo" in out
+def test_indent_config():
+    assert "\t_foo" in format_calc(GUIDE_LET)  # default is tab
+    assert "  _foo" in format_calc(GUIDE_LET, Style(indent="  "))
+    assert "    _foo" in format_calc(GUIDE_LET, Style.from_dict({"indent": 4}))
 
 
 def test_case_explodes_when_long():
@@ -167,28 +168,28 @@ def test_case_explodes_when_long():
     out = format_calc(src)
     lines = out.splitlines()
     assert lines[0] == "Case ("
-    assert lines[1] == '    $status = "open" ; "Openstaand dossier" ;'
-    assert lines[-2] == '    "Onbekende status"'
+    assert lines[1] == '\t$status = "open" ; "Openstaand dossier" ;'
+    assert lines[-2] == '\t"Onbekende status"'
     assert lines[-1] == ")"
 
 
 def test_nested_let_layout():
     src = 'Let ( [ inner = Let ( [ x = 1 ; result = x ] ; result ) ; result = inner ] ; result )'
     out = format_calc(src)
-    assert "    inner =\n" in out
-    assert "        Let ( [" in out
+    assert "\tinner =\n" in out
+    assert "\t\tLet ( [" in out
 
 
 def test_function_rule_force_multiline():
     style = Style.from_dict({"functions": {"if": {"multiline": "always"}}})
-    assert format_calc("If ( a ; b ; c )", style) == "If (\n    a ;\n    b ;\n    c\n)\n"
+    assert format_calc("If ( a ; b ; c )", style) == "If (\n\ta ;\n\tb ;\n\tc\n)\n"
 
 
 def test_function_rule_pairs_layout():
     style = Style.from_dict({"functions": {"choose": {"layout": "pairs", "multiline": "always"}}})
     assert (
         format_calc('Choose ( idx ; "a" ; "b" ; "c" )', style)
-        == 'Choose (\n    idx ; "a" ;\n    "b" ; "c"\n)\n'
+        == 'Choose (\n\tidx ; "a" ;\n\t"b" ; "c"\n)\n'
     )
 
 
@@ -201,7 +202,7 @@ def test_force_multiline_legacy_key():
     style = Style.from_dict({"force_multiline": ["let", "while", "getsummary"]})
     assert (
         format_calc("GetSummary ( Total ; Group )", style)
-        == "GetSummary (\n    Total ;\n    Group\n)\n"
+        == "GetSummary (\n\tTotal ;\n\tGroup\n)\n"
     )
 
 
@@ -246,7 +247,7 @@ def test_assignment_value_is_full_expression():
 def test_trailing_semicolon_preserved():
     assert format_calc('Case ( a ; b ; )') == "Case ( a ; b ; )\n"
     out = format_calc('Let ( [ x = 1 ; ] ; x )')
-    assert "    x = 1 ;" in out  # trailing semi kept on last declaration
+    assert "\tx = 1 ;" in out  # trailing semi kept on last declaration
 
 
 def test_comment_only_calc_kept():
@@ -259,8 +260,8 @@ def test_leading_layout():
     src = 'JSONSetElement ( "" ; [ "foo" ; $bar ; JSONString ] ; [ "s" ; "a" ; JSONString ] )'
     assert format_calc(src, style) == (
         'JSONSetElement ( ""\n'
-        '    ; [ "foo" ; $bar ; JSONString ]\n'
-        '    ; [ "s" ; "a" ; JSONString ]\n'
+        '\t; [ "foo" ; $bar ; JSONString ]\n'
+        '\t; [ "s" ; "a" ; JSONString ]\n'
         ")\n"
     )
 
@@ -339,7 +340,7 @@ def test_operator_position_trailing():
 def test_comments_above():
     style = Style.from_dict({"comments": "above"})
     out = format_calc("Let ( [ x = 1 ; // one\nresult = x ] ; result )", style)
-    assert "    // one\n    x = 1 ;" in out
+    assert "\t// one\n\tx = 1 ;" in out
     assert format_calc(out, style) == out  # idempotent
 
 
