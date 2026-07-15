@@ -111,6 +111,64 @@ def _banner() -> str:
     return f"≡ fmstyle {__version__}  FileMaker calculation formatter"
 
 
+_WORDMARK = [
+    '    ____               __        __   ',
+    '   / __/___ ___  _____/ /___  __/ /__ ',
+    '  / /_/ __ `__ \\/ ___/ __/ / / / / _ \\',
+    ' / __/ / / / / (__  ) /_/ /_/ / /  __/',
+    '/_/ /_/ /_/ /_/____/\\__/\\__, /_/\\___/ ',
+    '                       /____/         ',
+]
+# top-to-bottom blue gradient (matches the ≡ accent 38;5;75)
+_WORD_GRAD = ("38;5;117", "38;5;111", "38;5;75", "38;5;69", "38;5;68", "38;5;33")
+
+
+def _splash(stream=None) -> None:
+    """Neofetch-style splash for bare `fmstyle`: blue wordmark + a live summary
+    of presets, the resolved style pack, and skill state. Color only on a real
+    terminal (honor NO_COLOR); plain text otherwise, so a pipe stays clean."""
+    import os
+    import platform
+    if stream is None:
+        stream = sys.stdout
+    on = stream.isatty() and not os.environ.get("NO_COLOR")
+    def c(code: str) -> str: return f"\033[{code}m" if on else ""
+    def bg(n: int) -> str: return f"\033[48;5;{n}m" if on else ""
+    GLOW = c("38;5;39"); LBL = c("1;38;5;75"); VAL = c("38;5;253")
+    DIM = c("38;5;244"); R = c("0")
+
+    out = [""]
+    for i, line in enumerate(_WORDMARK):
+        out.append(f"  {c(_WORD_GRAD[i])}{line}{R}")
+    out.append(f"\n  {GLOW}≡{R} {DIM}v{__version__}{R}")
+    out.append(f"  {DIM}{'─' * len(_WORDMARK[1])}{R}")
+
+    def kv(k: str, v: str) -> None: out.append(f"  {LBL}{k:<9}{R}{VAL}{v}{R}")
+    _os = {"Darwin": "macOS", "Windows": "Windows", "Linux": "Linux"}.get(
+        platform.system(), platform.system())
+    kv("Engine", "FileMaker calculation formatter")
+    kv("Runtime", f"Python {platform.python_version()} · {_os} {platform.machine()}")
+    kv("Presets", " · ".join(preset_names()))
+    if Path("fmstyle.json").exists():
+        kv("Config", "./fmstyle.json")
+    else:
+        kv("Config", f"no project pack · use {GLOW}--preset oogi{R}")
+    try:
+        lint = preset_dict("oogi").get("lint") or {}
+        n = len([k for k, v in lint.items() if v]) if isinstance(lint, dict) else 0
+        kv("Rules", f"oogi: {n} lint rules")
+    except KeyError:
+        pass
+    skill = (Path("~/.claude/skills/fmstyle/SKILL.md").expanduser()).exists()
+    kv("Skill", f"{GLOW}installed{R}" if skill else f"run {GLOW}fmstyle install-skill{R}")
+
+    if on:
+        out.append("")
+        out.append("  " + "".join(f"{bg(x)}  {R} " for x in (17, 19, 25, 26, 33, 75)))
+    out.append("")
+    print("\n".join(out), file=stream)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="fmstyle",
@@ -119,7 +177,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--version", action="version", version=f"fmstyle {__version__}")
     ap.add_argument("--config", help="path to fmstyle.json (default: ./fmstyle.json if present)")
     ap.add_argument("--preset", help="named style pack (see `fmstyle presets`); --config keys override it")
-    sub = ap.add_subparsers(dest="command", required=True)
+    sub = ap.add_subparsers(dest="command")
 
     sub.add_parser("presets", help="list available style presets")
 
@@ -136,6 +194,11 @@ def main(argv: list[str] | None = None) -> int:
     ins.add_argument("--remote", action="store_true", help="compare installed skill vs GitHub main")
 
     args = ap.parse_args(argv)
+
+    # Bare `fmstyle` (no subcommand): show the splash instead of an argparse error.
+    if args.command is None:
+        _splash(sys.stdout)
+        return 0
 
     # Brand line on interactive runs; stderr so piped/parsed stdout stays clean
     if sys.stderr.isatty():

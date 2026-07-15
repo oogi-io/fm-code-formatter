@@ -63,6 +63,10 @@ pipx install fmstyle        # or: pip install fmstyle
 
 Pure standard library, Python 3.10+, no dependencies.
 
+Run `fmstyle` on its own for a status splash: version, available presets, the
+resolved style pack (`./fmstyle.json` or a `--preset`), the active lint-rule
+count, and whether the Claude skill is installed. (Piped output stays plain text.)
+
 ## Web app (no install)
 
 **Live at [fmstyle.dev](https://fmstyle.dev)** — or open `fmstyle/web/index.html` locally. Paste a
