@@ -16,7 +16,7 @@ Sibling of [fmsonar](https://github.com/oogi-io/fm-ddr-analyzer) (same philosoph
 pure-stdlib Python core, zero dependencies, nothing leaves the machine).
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/oogi-io/fm-code-formatter/main/docs/fmstyle-install-use.gif" alt="Installing fmstyle, formatting a calc with the default style, adopting the oogi preset, and formatting a JSONSetElement calc" width="820">
+  <img src="https://raw.githubusercontent.com/oogi-io/fm-code-formatter/main/docs/fmstyle-use-web.gif" alt="Formatting a FileMaker calculation in the browser at fmstyle.dev: paste, format, switch preset, copy" width="820">
 </p>
 
 ## Why
@@ -61,18 +61,6 @@ pure-stdlib Python core, zero dependencies, nothing leaves the machine).
 - CLI: `fmstyle format` (stdin/files, `--write`, `--check`) and `fmstyle lint` —
   CI- and pre-commit-ready, exit codes included.
 
-## Install
-
-```bash
-pipx install fmstyle        # or: pip install fmstyle
-```
-
-Pure standard library, Python 3.10+, no dependencies.
-
-Run `fmstyle` on its own for a status splash: version, available presets, the
-resolved style pack (`./fmstyle.json` or a `--preset`), the active lint-rule
-count, and whether the Claude skill is installed. (Piped output stays plain text.)
-
 ## Web app (no install)
 
 **Live at [fmstyle.dev](https://fmstyle.dev)** — or open `fmstyle/web/index.html` locally. Paste a
@@ -80,14 +68,26 @@ calculation, it formats live, copy the result. Load your `fmstyle.json` to forma
 your house style; quick controls for indent and width. Everything runs **entirely
 client-side — nothing is uploaded** (no network requests, no CDN, no analytics).
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/oogi-io/fm-code-formatter/main/docs/fmstyle-use-web.gif" alt="Pasting a calculation into fmstyle.dev, formatting it, switching the preset, and copying the result" width="820">
-</p>
-
 The page embeds a JS port of the Python engine. Parity is enforced by fixtures:
 `tests/gen_parity_fixtures.py` renders every case through the Python reference,
 `node tests/test_parity.mjs` replays them through the JS engine extracted from the
 HTML and requires **byte-identical** output (formatting + lint findings).
+
+## Install (the CLI)
+
+```bash
+pipx install fmstyle        # or: pip install fmstyle
+```
+
+Pure standard library, Python 3.10+, no dependencies.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/oogi-io/fm-code-formatter/main/docs/fmstyle-install-use.gif" alt="Installing fmstyle, formatting a calc with the default style, adopting the oogi preset, and formatting a JSONSetElement calc" width="820">
+</p>
+
+Run `fmstyle` on its own for a status splash: version, available presets, the
+resolved style pack (`./fmstyle.json` or a `--preset`), the active lint-rule
+count, and whether the Claude skill is installed. (Piped output stays plain text.)
 
 ## Use it from your AI assistant (Claude Code skill)
 
