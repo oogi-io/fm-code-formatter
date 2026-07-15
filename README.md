@@ -1,4 +1,9 @@
-# fmstyle
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/oogi-io/fm-code-formatter/main/docs/banner-dark.png">
+    <img src="https://raw.githubusercontent.com/oogi-io/fm-code-formatter/main/docs/banner-light.png" alt="fmstyle" width="380">
+  </picture>
+</p>
 
 **A deterministic formatter and shareable style engine for FileMaker code.**
 Think *prettier / gofmt for FileMaker calculations*: a team or solo developer

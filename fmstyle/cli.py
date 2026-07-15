@@ -101,6 +101,16 @@ def _read_sources(paths: list[str]) -> list[tuple[str, str]]:
     return [(p, Path(p).read_text(encoding="utf-8")) for p in paths]
 
 
+def _banner() -> str:
+    """One-line brand header: indent glyph + two-tone wordmark.
+    Color only on a real terminal (and honor NO_COLOR); plain text otherwise."""
+    import os
+    if sys.stderr.isatty() and not os.environ.get("NO_COLOR"):
+        b = "\033[1m"; a = "\033[38;5;75m"; d = "\033[38;5;244m"; r = "\033[0m"
+        return f"{a}≡{r} {b}{a}fm{r}{b}style{r} {d}{__version__}{r}  FileMaker calculation formatter"
+    return f"≡ fmstyle {__version__}  FileMaker calculation formatter"
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="fmstyle",
@@ -126,6 +136,10 @@ def main(argv: list[str] | None = None) -> int:
     ins.add_argument("--remote", action="store_true", help="compare installed skill vs GitHub main")
 
     args = ap.parse_args(argv)
+
+    # Brand line on interactive runs; stderr so piped/parsed stdout stays clean
+    if sys.stderr.isatty():
+        print(_banner(), file=sys.stderr)
 
     if args.command == "presets":
         for name in preset_names():
