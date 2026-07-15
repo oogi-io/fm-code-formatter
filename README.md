@@ -13,6 +13,10 @@ LLM — comes out formatted the same way, every time.
 Sibling of [fmsonar](https://github.com/oogi-io/fm-ddr-analyzer) (same philosophy:
 pure-stdlib Python core, zero dependencies, nothing leaves the machine).
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/oogi-io/fm-code-formatter/main/docs/fmstyle-install-use.gif" alt="Installing fmstyle, formatting a calc with the default style, adopting the oogi preset, and formatting a JSONSetElement calc" width="820">
+</p>
+
 ## Why
 
 1. **Consistency is a style pack, not a habit.** FileMaker style usually lives in
