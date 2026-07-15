@@ -80,6 +80,10 @@ calculation, it formats live, copy the result. Load your `fmstyle.json` to forma
 your house style; quick controls for indent and width. Everything runs **entirely
 client-side — nothing is uploaded** (no network requests, no CDN, no analytics).
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/oogi-io/fm-code-formatter/main/docs/fmstyle-use-web.gif" alt="Pasting a calculation into fmstyle.dev, formatting it, switching the preset, and copying the result" width="820">
+</p>
+
 The page embeds a JS port of the Python engine. Parity is enforced by fixtures:
 `tests/gen_parity_fixtures.py` renders every case through the Python reference,
 `node tests/test_parity.mjs` replays them through the JS engine extracted from the
