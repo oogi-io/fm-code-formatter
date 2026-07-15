@@ -10,6 +10,8 @@ Think *prettier / gofmt for FileMaker calculations*: a team or solo developer
 defines their house style once, and every calculation — written by a human or by an
 LLM — comes out formatted the same way, every time.
 
+*Three ways to use it: the web app at **[fmstyle.dev](https://fmstyle.dev)** (paste, format, copy — nothing uploaded), the CLI ([![PyPI](https://img.shields.io/pypi/v/fmstyle)](https://pypi.org/project/fmstyle/) `pipx install fmstyle`), and a Claude Code skill. Repo/engine name: `fm-code-formatter`.*
+
 Sibling of [fmsonar](https://github.com/oogi-io/fm-ddr-analyzer) (same philosophy:
 pure-stdlib Python core, zero dependencies, nothing leaves the machine).
 
