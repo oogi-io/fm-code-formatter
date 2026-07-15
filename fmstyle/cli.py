@@ -83,6 +83,28 @@ def cmd_install_skill(args) -> int:
     return 0
 
 
+def cmd_init(args) -> int:
+    """Write a project fmstyle.json, materialized from a named preset (or the
+    built-in defaults). Refuses to clobber an existing file without --force."""
+    dest = Path("fmstyle.json")
+    if dest.exists() and not args.force:
+        print(f"{dest} already exists (use --force to overwrite)", file=sys.stderr)
+        return 1
+    if args.preset:
+        try:
+            style = dict(preset_dict(args.preset))
+        except KeyError:
+            print(f"error: unknown preset {args.preset!r}; see: fmstyle presets", file=sys.stderr)
+            return 2
+        label = f"{args.preset} preset"
+    else:
+        style = {}  # empty file = the built-in defaults, ready to customize
+        label = "defaults"
+    dest.write_text(json.dumps(style, indent=2) + "\n", encoding="utf-8")
+    print(f"Wrote {dest} ({label}). Now `fmstyle format` uses it automatically.")
+    return 0
+
+
 def _load_style(config: str | None, preset: str | None) -> Style:
     base = dict(preset_dict(preset)) if preset else {}
     path = Path(config) if config else Path("fmstyle.json")
@@ -181,6 +203,10 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("presets", help="list available style presets")
 
+    ini = sub.add_parser("init", help="write a project fmstyle.json from a preset")
+    ini.add_argument("--preset", help="preset to materialize (see: fmstyle presets)")
+    ini.add_argument("--force", action="store_true", help="overwrite an existing fmstyle.json")
+
     fmt = sub.add_parser("format", help="format calculation(s) (stdin by default)")
     fmt.add_argument("paths", nargs="*", help="files to format, '-' or empty for stdin")
     fmt.add_argument("-w", "--write", action="store_true", help="rewrite files in place")
@@ -208,6 +234,9 @@ def main(argv: list[str] | None = None) -> int:
         for name in preset_names():
             print(f"{name:10s} {PRESETS[name]['description']}")
         return 0
+
+    if args.command == "init":
+        return cmd_init(args)
 
     if args.command == "install-skill":
         return cmd_install_skill(args)

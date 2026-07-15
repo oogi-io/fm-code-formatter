@@ -351,6 +351,31 @@ def test_keyword_case():
     assert format_calc("x AND y", Style.from_dict({"lowercase_keywords": True})) == "x and y\n"
 
 
+def test_init_writes_preset():
+    import json
+    import os
+    import shutil
+    import tempfile
+
+    from fmstyle.cli import main
+    from fmstyle.presets import preset_dict
+
+    d = tempfile.mkdtemp()
+    cwd = os.getcwd()
+    try:
+        os.chdir(d)
+        assert main(["init", "--preset", "oogi"]) == 0
+        assert json.loads(open("fmstyle.json").read()) == preset_dict("oogi")
+        assert main(["init", "--preset", "oogi"]) == 1  # refuses to clobber
+        assert main(["init", "--preset", "oogi", "--force"]) == 0  # --force overwrites
+        assert main(["init"]) == 1  # still refuses without --force
+        assert main(["init", "--force"]) == 0  # empty defaults file
+        assert json.loads(open("fmstyle.json").read()) == {}
+    finally:
+        os.chdir(cwd)
+        shutil.rmtree(d, ignore_errors=True)
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

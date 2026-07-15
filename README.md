@@ -114,6 +114,14 @@ python3 -c "from fmstyle import format_calc; print(format_calc('Let([x=1;result=
 
 ## Configuration (`fmstyle.json`)
 
+Drop an `fmstyle.json` in your project and `fmstyle format` / `fmstyle lint`
+pick it up automatically (no `--preset` needed). Scaffold one from a preset:
+
+```bash
+fmstyle init --preset oogi   # writes fmstyle.json, then edit to taste
+fmstyle init                 # empty file = the built-in defaults
+```
+
 A style pack has two honest halves — **formatting** (top level: mechanical
 layout, every team has some answer and any answer is valid) and **lint**
 (opinionated practice rules, each individually **opt-in**):
