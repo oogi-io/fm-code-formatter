@@ -29,6 +29,7 @@ not improvise keys for it.
 | Blank lines between Let declarations | `let_blank_lines` | true / false | configurable |
 | Keyword casing (and/or/not/xor) | `keyword_case` | `"lower"` / `"upper"` / `"preserve"` | configurable |
 | Inline comments stay inline or move above | `comments` | `"preserve"` / `"above"` | configurable |
+| Decimal separator in number literals | `decimal_separator` | `"auto"` (accept both, preserve each literal's own) / `"comma"` (EU: also reads `1,234` as a decimal) / `"period"` (pre-1.3: commas never join numbers) | configurable |
 | Wrapped operator at line start or end | `wrap.operator_position` | `"leading"` / `"trailing"` | configurable |
 | Space inside call/group parens `( x )` | `spacing.inside_parens` | true / false | configurable |
 | Space between name and paren `If (` | `spacing.before_paren` | true / false | configurable |
@@ -45,6 +46,13 @@ not improvise keys for it.
 | Function-name casing | — | kept as written | fixed |
 | Blank lines outside Let | — | none inserted | fixed |
 | **Column alignment** (aligned `=` / comments in Let blocks) | — | **not supported — normalized to single spaces**; if a team aligns columns, say so explicitly before reformatting their code | fixed |
+| Leading zero on bare-separator literals (`,21` → `0,21`, `.21` → `0.21`) | — | always added; value-preserving | fixed |
+
+When a solution comes from an EU-locale FileMaker file (comma decimals
+throughout), pin `"decimal_separator": "comma"` in its pack: under `"auto"`
+the thousands-ambiguous pattern (`1,235` — 1–3 leading digits, comma, exactly
+3 digits) errors on purpose instead of guessing, and EU financial calcs hit
+that pattern routinely (index factors, 3-decimal rates).
 
 Lint rules available (each opt-in; `true` = defaults, object = parameters):
 

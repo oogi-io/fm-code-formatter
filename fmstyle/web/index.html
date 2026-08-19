@@ -292,7 +292,9 @@
         This JSON is your team's style pack — the same file the <code>fmstyle</code>
         CLI reads. Top level = formatting (indent, width, <code>spacing</code>,
         <code>wrap.operator_position</code> leading/trailing, <code>comments</code>
-        preserve/above, <code>keyword_case</code>, per-function <code>functions</code>
+        preserve/above, <code>keyword_case</code>, <code>decimal_separator</code>
+        auto/comma/period — EU <code>0,21</code> and US <code>0.21</code> both parse
+        and keep their own notation, per-function <code>functions</code>
         layouts). <code>"lint"</code> = practice rules, each <b>opt-in</b> — no
         <code>lint</code> section, no opinions. Edit here or load from disk;
         everything reformats live.

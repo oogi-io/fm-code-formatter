@@ -143,6 +143,7 @@ layout, every team has some answer and any answer is valid) and **lint**
   "let_blank_lines": false,
   "keyword_case": "lower",
   "comments": "preserve",
+  "decimal_separator": "auto",
   "wrap": { "operator_position": "trailing" },
   "spacing": {
     "inside_parens": true,
@@ -159,10 +160,39 @@ layout, every team has some answer and any answer is valid) and **lint**
   },
   "lint": {
     "let-explicit-result": { "result_name": "result" },
-    "variable-naming":     { "pattern": "^[_a-z][A-Za-z0-9]*$" }
+    "variable-naming":     { "pattern": "^[_a-z][A-Za-z0-9]*$" },
+    "mixed-decimal-separators": true
   }
 }
 ```
+
+### EU vs US decimal notation (`decimal_separator`)
+
+FileMaker writes number literals in the locale baked into the file at
+creation: a Belgian, French, German or Dutch solution has `0,21` throughout
+its calculations, a US one `0.21`. fmstyle handles both:
+
+- `"auto"` (default) accepts both notations and **preserves whatever each
+  literal used** — an EU calculation formats to EU notation, a US one to US
+  notation, same as Prettier's `endOfLine: "auto"`. The one genuinely
+  ambiguous pattern — 1–3 leading digits, a comma, exactly three digits
+  (`1,234` is one thousand in US notation, one-point-two in EU) — fails
+  loudly and asks you to pin this setting.
+- `"comma"` — for projects that are known EU — also reads `1,234` as a
+  decimal. Pin this in an EU project's pack.
+- `"period"` is the pre-1.3 behavior: commas never join numbers.
+
+Why doesn't `1,235` pass when an unambiguous `0,21` sits right next to it?
+Because fmstyle judges each literal locally and predictably rather than
+inferring from surrounding code — and relaxing a hard error later is
+backward-compatible, while taking back a silent guess is not. Note the
+deliberate asymmetry: period literals are never flagged (that would break
+every `3.142`-style constant in existing US packs), so a pasted EU-grouped
+`1.234` meaning one thousand passes silently — enable the
+`mixed-decimal-separators` lint rule to catch exactly that kind of stray.
+Literals that start with their separator gain a leading zero (`,21` → `0,21`)
+— the only rewrite fmstyle ever makes to a literal, and it never changes what
+the calculation computes.
 
 With no `lint` section, no practice rules run: bare fmstyle formats your code
 but has **no opinions you didn't give it**. Prefer a calculation as the Let

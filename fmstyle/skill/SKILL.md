@@ -111,6 +111,16 @@ output matches how they write.
   do not hand-format around it. An unusual construct that it cannot parse is a
   bug worth reporting, not a reason to bypass the guarantee.
 
+## EU vs US decimal notation
+
+Both notations parse (since 1.3.0): `0,21` and `0.21` each keep their own
+separator through formatting - never swap a calc's separators to get it
+through the tool. For a solution from an EU-locale FileMaker file, use (or
+create) a project pack with `"decimal_separator": "comma"`; under the default
+`"auto"` the one ambiguous pattern (`1,235`: US thousands vs EU decimal)
+errors deliberately and names this setting. If that error appears on a known
+EU project, pin `"comma"` in its `fmstyle.json` rather than editing the calc.
+
 ## Refresh
 
 Update this skill after upgrading the package: `fmstyle install-skill`
