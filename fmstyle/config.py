@@ -46,6 +46,7 @@ from pathlib import Path
 VALID_LAYOUTS = {"auto", "args", "pairs", "let", "while", "leading"}
 VALID_MULTILINE = {"auto", "always"}
 VALID_KEYWORD_CASE = {"lower", "upper", "preserve"}
+VALID_DECIMAL_SEPARATOR = {"period", "comma", "auto"}
 VALID_COMMENTS = {"preserve", "above"}
 VALID_OPERATOR_POSITION = {"leading", "trailing"}
 
@@ -68,11 +69,12 @@ DEFAULT_FUNCTIONS = {
 LINT_RULES = {
     "let-explicit-result": {"result_name": "result"},
     "variable-naming": {"pattern": r"^[_a-z][A-Za-z0-9]*$"},
+    "mixed-decimal-separators": {},
 }
 
 _TOP_LEVEL_KEYS = {
     "indent", "width", "let_blank_lines", "keyword_case", "comments",
-    "spacing", "wrap", "functions", "lint",
+    "decimal_separator", "spacing", "wrap", "functions", "lint",
     # legacy shorthands (0.2.x packs keep working)
     "lowercase_keywords", "space_before_semicolon",
     "result_name", "local_variable_pattern", "force_multiline",
@@ -94,6 +96,7 @@ class Style:
     let_blank_lines: bool = True
     keyword_case: str = "lower"        # lower | upper | preserve
     comments: str = "preserve"         # preserve | above
+    decimal_separator: str = "auto"    # period | comma | auto (preserve source)
     operator_position: str = "leading"  # leading | trailing (wrapped operators)
     spacing: dict = field(default_factory=_default_spacing)
     functions: dict = field(default_factory=_default_functions)
@@ -130,6 +133,13 @@ class Style:
             if data["comments"] not in VALID_COMMENTS:
                 raise ValueError(f"comments must be one of {sorted(VALID_COMMENTS)}")
             kwargs["comments"] = data["comments"]
+
+        if "decimal_separator" in data:
+            if data["decimal_separator"] not in VALID_DECIMAL_SEPARATOR:
+                raise ValueError(
+                    f"decimal_separator must be one of {sorted(VALID_DECIMAL_SEPARATOR)}"
+                )
+            kwargs["decimal_separator"] = data["decimal_separator"]
 
         spacing = _default_spacing()
         if "space_before_semicolon" in data:  # legacy

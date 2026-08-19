@@ -173,6 +173,10 @@ def _splash(stream=None) -> None:
     kv("Presets", " · ".join(preset_names()))
     if Path("fmstyle.json").exists():
         kv("Config", "./fmstyle.json")
+        try:
+            kv("Decimals", Style.load("fmstyle.json").decimal_separator)
+        except (ValueError, OSError):
+            pass
     else:
         kv("Config", f"no project pack · use {GLOW}--preset oogi{R}")
     try:

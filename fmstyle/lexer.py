@@ -4,6 +4,10 @@ Design rules:
 
 - Verbatim tokens: a token's text is the exact source slice (field names keep
   their original interior spacing), so the printer can never alter a name.
+  One deliberate exception: a number literal starting with its decimal
+  separator gains a leading zero at lex time (,21 -> 0,21 and .21 -> 0.21).
+  Input and output re-tokenize to the same normalized text, so the formatter's
+  safety check still holds.
 - Comments ride on the next code token (`pre_comments`); the formatter's safety
   check compares code tokens and comment texts of input vs output, so nothing
   can be dropped silently.
@@ -106,7 +110,15 @@ def _qualify(s: str, end: int, line: int) -> int:
     raise LexError(f"expected a field name after '::' (line {line})")
 
 
-def tokenize(source: str) -> list[Token]:
+def tokenize(source: str, decimal_separator: str = "auto") -> list[Token]:
+    """decimal_separator: "period" | "comma" | "auto" (see config.Style).
+
+    "auto" accepts both notations and preserves whatever each literal used;
+    "comma" additionally reads 1,234 as one point two three four; "period" is
+    the pre-1.3 behavior where a comma never joins a number.
+    """
+    if decimal_separator not in ("period", "comma", "auto"):
+        raise ValueError('decimal_separator must be "period", "comma" or "auto"')
     n = len(source)
     i = 0
     line = 1
@@ -178,14 +190,46 @@ def tokenize(source: str) -> list[Token]:
             i = j + 1
             continue
 
-        if ch.isdigit() or (ch == "." and i + 1 < n and source[i + 1].isdigit()):
+        comma_joins = decimal_separator != "period"
+        if ch.isdigit() or (
+            (ch == "." or (ch == "," and comma_joins))
+            and i + 1 < n
+            and source[i + 1].isdigit()
+        ):
             j = i
-            seen_dot = False
-            while j < n and (source[j].isdigit() or (source[j] == "." and not seen_dot)):
-                if source[j] == ".":
-                    seen_dot = True
-                j += 1
-            add("NUMBER", source[i:j])
+            seps: list[str] = []
+            while j < n:
+                c = source[j]
+                if c.isdigit():
+                    j += 1
+                    continue
+                followed_by_digit = j + 1 < n and source[j + 1].isdigit()
+                if c == "." and (not seps if not comma_joins else (not seps or followed_by_digit)):
+                    seps.append(c)
+                    j += 1
+                    continue
+                if c == "," and comma_joins and followed_by_digit:
+                    seps.append(c)
+                    j += 1
+                    continue
+                break
+            text = source[i:j]
+            if text[0] in ".,":  # leading-zero normalization: ,21 -> 0,21
+                text = "0" + text
+            if len(seps) > 1:
+                raise LexError(
+                    f"grouped number '{text}' is not valid FileMaker calculation "
+                    f"syntax; remove the thousands separators (line {line})"
+                )
+            if decimal_separator == "auto" and seps == [","]:
+                ip, fp = text.split(",")
+                if ip[0] != "0" and len(ip) <= 3 and len(fp) == 3:
+                    raise LexError(
+                        f"ambiguous number '{text}': {ip}{fp} (US) or {ip}.{fp} (EU); "
+                        f'set decimal_separator to "comma" or "period" in the '
+                        f"style pack (line {line})"
+                    )
+            add("NUMBER", text)
             i = j
             continue
 
@@ -266,6 +310,15 @@ def tokenize(source: str) -> list[Token]:
             i += 1
             continue
 
+        if (
+            ch == ","
+            and decimal_separator == "period"
+            and ((i > 0 and source[i - 1].isdigit()) or (i + 1 < n and source[i + 1].isdigit()))
+        ):
+            raise LexError(
+                "unexpected ',' in number: decimal_separator is \"period\"; "
+                f'use "comma" or "auto" for EU notation (line {line})'
+            )
         raise LexError(f"unexpected character {ch!r} (line {line})")
 
     tokens.append(Token("EOF", "", line, pending))

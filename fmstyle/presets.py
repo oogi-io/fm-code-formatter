@@ -19,12 +19,13 @@ PRESETS: dict[str, dict] = {
     "oogi": {
         "description": "OOGI BV FileMaker style - tab indent, blank-line Let "
         "blocks, leading-semicolon JSONSetElement; lint: explicit result, "
-        "camelCase locals",
+        "camelCase locals, no mixed decimal separators",
         "style": {
             "indent": "tab",
             "width": 96,
             "let_blank_lines": True,
             "keyword_case": "lower",
+            "decimal_separator": "auto",
             "functions": {
                 "let": {"layout": "let", "multiline": "always"},
                 "while": {"layout": "while", "multiline": "always"},
@@ -34,6 +35,7 @@ PRESETS: dict[str, dict] = {
             "lint": {
                 "let-explicit-result": {"result_name": "result"},
                 "variable-naming": {"pattern": "^[_a-z][A-Za-z0-9]*$"},
+                "mixed-decimal-separators": True,
             },
         },
     },
@@ -45,6 +47,7 @@ PRESETS: dict[str, dict] = {
             "width": 96,
             "let_blank_lines": False,
             "keyword_case": "lower",
+            "decimal_separator": "auto",
             "functions": {
                 "let": {"layout": "let", "multiline": "always"},
                 "while": {"layout": "while", "multiline": "always"},

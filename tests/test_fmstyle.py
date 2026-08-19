@@ -376,6 +376,130 @@ def test_init_writes_preset():
         shutil.rmtree(d, ignore_errors=True)
 
 
+def _lex_error(source, style=None):
+    from fmstyle.lexer import LexError
+
+    try:
+        format_calc(source, style)
+    except LexError as exc:
+        return str(exc)
+    raise AssertionError(f"expected LexError for {source!r}")
+
+
+def test_decimal_separator_round_trips():
+    # EU stays EU, US stays US; each is idempotent
+    eu = format_calc("Case ( VAT_Rate > 0 ; VAT_Rate ; 0,21 )")
+    assert "0,21" in eu and format_calc(eu) == eu
+    us = format_calc("Case ( VAT_Rate > 0 ; VAT_Rate ; 0.21 )")
+    assert "0.21" in us and format_calc(us) == us
+
+
+def test_decimal_leading_zero_normalization():
+    assert format_calc(",21") == "0,21\n"
+    assert format_calc(".21") == "0.21\n"
+    assert format_calc("-,5") == "-0,5\n"  # minus is its own OP token
+    assert format_calc("0,21") == "0,21\n"  # already normalized: untouched
+
+
+def test_decimal_ambiguous_under_auto():
+    msg = _lex_error("x + 1,234")
+    assert msg == (
+        "ambiguous number '1,234': 1234 (US) or 1.234 (EU); set "
+        'decimal_separator to "comma" or "period" in the style pack (line 1)'
+    )
+    # unambiguous comma literals pass: leading zero, !=3 decimals, >3-digit int
+    for ok in ("0,123", "1,23", "1,2345", "1234,567", ",234"):
+        assert format_calc(ok)  # must not raise
+
+
+def test_decimal_comma_mode_reads_thousands_pattern_as_decimal():
+    style = Style.from_dict({"decimal_separator": "comma"})
+    assert format_calc("x + 1,234", style) == "x + 1,234\n"
+
+
+def test_decimal_grouped_numbers_rejected():
+    for bad in ("1,234,567", "1,234.56", "1.234,56"):
+        msg = _lex_error(f"x + {bad}")
+        assert msg == (
+            f"grouped number '{bad}' is not valid FileMaker calculation "
+            "syntax; remove the thousands separators (line 1)"
+        )
+
+
+def test_decimal_period_mode_stays_legacy_with_better_message():
+    style = Style.from_dict({"decimal_separator": "period"})
+    assert format_calc("1 + 0.5", style) == "1 + 0.5\n"
+    expected = (
+        "unexpected ',' in number: decimal_separator is \"period\"; "
+        'use "comma" or "auto" for EU notation (line 1)'
+    )
+    assert _lex_error("x + 1,5", style) == expected
+    assert _lex_error("x + ,5", style) == expected
+    # digit before the comma also triggers it (argument-separator typo)
+    assert _lex_error("Case ( a ; 1, 2 )", style) == expected
+    # in auto, a comma that joins no number keeps the bare legacy message
+    assert _lex_error("Case ( a ; 1, 2 )") == "unexpected character ',' (line 1)"
+
+
+def test_decimal_error_line_numbers_with_crlf():
+    msg = _lex_error("x +\r\n1,234")
+    assert msg.endswith("(line 2)")
+
+
+def test_mixed_decimal_separators_lint():
+    auto = Style.from_dict({"lint": {"mixed-decimal-separators": True}})
+    assert lint_calc("0,21 + 3.142", auto) == [
+        (
+            "mixed-decimal-separators",
+            "calculation mixes decimal separators: `0,21` (comma) and `3.142` (period)",
+        )
+    ]
+    assert lint_calc("0,21 + 1,5", auto) == []
+    assert lint_calc("0.21 + 1.5", auto) == []
+    comma = Style.from_dict(
+        {"decimal_separator": "comma", "lint": {"mixed-decimal-separators": True}}
+    )
+    assert lint_calc("0,21 + 3.142 + 2.718", comma) == [
+        ("mixed-decimal-separators", "number `3.142` uses '.' but decimal_separator is \"comma\""),
+        ("mixed-decimal-separators", "number `2.718` uses '.' but decimal_separator is \"comma\""),
+    ]
+
+
+def test_decimal_format_and_lint_agree_on_same_input():
+    # the regression this guards: format accepting what lint's tokenizer rejects
+    style = Style.from_dict(
+        {"decimal_separator": "comma", "lint": {"mixed-decimal-separators": True}}
+    )
+    src = "0,21 + 1,234"
+    assert format_calc(src, style) == "0,21 + 1,234\n"
+    assert lint_calc(src, style) == []
+
+
+def test_decimal_integration_normalize_ambiguity_lint():
+    # ,5 normalizes, 0,21 passes ambiguity, mixed lint still fires - one source
+    style = Style.from_dict({"lint": {"mixed-decimal-separators": True}})
+    src = "Case ( x > 3.142 ; 0,21 ; ,5 )"
+    out = format_calc(src, style)
+    assert "0,5" in out and "0,21" in out and "3.142" in out
+    issues = lint_calc(src, style)
+    assert [rule for rule, _ in issues] == ["mixed-decimal-separators"]
+
+
+def test_decimal_separator_config_validation():
+    try:
+        Style.from_dict({"decimal_separator": "dot"})
+    except ValueError as exc:
+        assert "decimal_separator" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")
+    # an init-written oogi pack loads back through normal resolution
+    from fmstyle.presets import preset_dict
+
+    style = Style.from_dict(preset_dict("oogi"))
+    assert style.decimal_separator == "auto"
+    assert "mixed-decimal-separators" in style.lint
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):
