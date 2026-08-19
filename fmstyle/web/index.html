@@ -385,7 +385,11 @@
     throw new LexError(`expected a field name after '::' (line ${line})`);
   }
 
-  function tokenize(source) {
+  function tokenize(source, decimalSeparator) {
+    decimalSeparator = decimalSeparator || "auto";
+    if (decimalSeparator !== "period" && decimalSeparator !== "comma" && decimalSeparator !== "auto") {
+      throw new Error('decimal_separator must be "period", "comma" or "auto"');
+    }
     const n = source.length;
     let i = 0;
     let line = 1;
@@ -443,14 +447,38 @@
         continue;
       }
 
-      if (isDigit(ch) || (ch === "." && i + 1 < n && isDigit(source[i + 1]))) {
+      const commaJoins = decimalSeparator !== "period";
+      if (isDigit(ch) || ((ch === "." || (ch === "," && commaJoins)) && i + 1 < n && isDigit(source[i + 1]))) {
         let j = i;
-        let dot = false;
-        while (j < n && (isDigit(source[j]) || (source[j] === "." && !dot))) {
-          if (source[j] === ".") dot = true;
-          j++;
+        const seps = [];
+        while (j < n) {
+          const c = source[j];
+          if (isDigit(c)) { j++; continue; }
+          const followedByDigit = j + 1 < n && isDigit(source[j + 1]);
+          if (c === "." && (!commaJoins ? !seps.length : (!seps.length || followedByDigit))) {
+            seps.push(c);
+            j++;
+            continue;
+          }
+          if (c === "," && commaJoins && followedByDigit) {
+            seps.push(c);
+            j++;
+            continue;
+          }
+          break;
         }
-        add("NUMBER", source.slice(i, j));
+        let text = source.slice(i, j);
+        if (text[0] === "." || text[0] === ",") text = "0" + text; // leading-zero normalization
+        if (seps.length > 1) {
+          throw new LexError(`grouped number '${text}' is not valid FileMaker calculation syntax; remove the thousands separators (line ${line})`);
+        }
+        if (decimalSeparator === "auto" && seps.length === 1 && seps[0] === ",") {
+          const [ip, fp] = text.split(",");
+          if (ip[0] !== "0" && ip.length <= 3 && fp.length === 3) {
+            throw new LexError(`ambiguous number '${text}': ${ip}${fp} (US) or ${ip}.${fp} (EU); set decimal_separator to "comma" or "period" in the style pack (line ${line})`);
+          }
+        }
+        add("NUMBER", text);
         i = j;
         continue;
       }
@@ -507,7 +535,13 @@
       if (ch === "]") { add("RBRACKET", ch); i++; continue; }
       if (ch === ";") { add("SEMI", ch); i++; continue; }
 
-      throw new LexError(`unexpected character ${JSON.stringify(ch)} (line ${line})`);
+      if (
+        ch === "," && decimalSeparator === "period" &&
+        ((i > 0 && isDigit(source[i - 1])) || (i + 1 < n && isDigit(source[i + 1])))
+      ) {
+        throw new LexError(`unexpected ',' in number: decimal_separator is "period"; use "comma" or "auto" for EU notation (line ${line})`);
+      }
+      throw new LexError(`unexpected character '${ch}' (line ${line})`);
     }
 
     tokens.push({ kind: "EOF", text: "", line, pre: pending });
@@ -753,6 +787,7 @@
     let_blank_lines: true,
     keyword_case: "lower",
     comments: "preserve",
+    decimal_separator: "auto",
     operator_position: "leading",
   };
   const DEFAULT_SPACING = {
@@ -771,15 +806,17 @@
   const LINT_RULES = {
     "let-explicit-result": { result_name: "result" },
     "variable-naming": { pattern: "^[_a-z][A-Za-z0-9]*$" },
+    "mixed-decimal-separators": {},
   };
   const VALID_LAYOUTS = new Set(["auto", "args", "pairs", "let", "while", "leading"]);
   const VALID_MULTILINE = new Set(["auto", "always"]);
   const VALID_KEYWORD_CASE = new Set(["lower", "upper", "preserve"]);
+  const VALID_DECIMAL_SEPARATOR = new Set(["period", "comma", "auto"]);
   const VALID_COMMENTS = new Set(["preserve", "above"]);
   const VALID_OPERATOR_POSITION = new Set(["leading", "trailing"]);
   const TOP_LEVEL_KEYS = new Set([
     "indent", "width", "let_blank_lines", "keyword_case", "comments",
-    "spacing", "wrap", "functions", "lint",
+    "decimal_separator", "spacing", "wrap", "functions", "lint",
     "lowercase_keywords", "space_before_semicolon",
     "result_name", "local_variable_pattern", "force_multiline",
   ]);
@@ -811,6 +848,12 @@
         throw new Error(`comments must be one of ${[...VALID_COMMENTS].sort().join(", ")}`);
       }
       style.comments = data.comments;
+    }
+    if ("decimal_separator" in data) {
+      if (!VALID_DECIMAL_SEPARATOR.has(data.decimal_separator)) {
+        throw new Error(`decimal_separator must be one of ${[...VALID_DECIMAL_SEPARATOR].sort().join(", ")}`);
+      }
+      style.decimal_separator = data.decimal_separator;
     }
     const spacing = Object.assign({}, DEFAULT_SPACING);
     if ("space_before_semicolon" in data) { // legacy
@@ -1281,10 +1324,10 @@
 
   // --------------------------------------------------------------- api
 
-  function signature(source) {
+  function signature(source, decimalSeparator) {
     const code = [];
     const comments = [];
-    for (const tok of tokenize(source)) {
+    for (const tok of tokenize(source, decimalSeparator)) {
       for (const c of tok.pre) comments.push(c.text);
       if (tok.kind !== "EOF") {
         code.push(tok.kind + " " + (tok.kind === "OP" ? tok.text.toLowerCase() : tok.text));
@@ -1295,23 +1338,75 @@
 
   function formatCalc(source, style) {
     style = style || makeStyle({});
-    const tokens = tokenize(source);
+    const tokens = tokenize(source, style.decimal_separator);
     if (tokens.length === 1) return source; // comments only - keep as is
     const root = parse(tokens);
     const out = makePrinter(style).format(root);
-    if (signature(source) !== signature(out)) {
+    if (signature(source, style.decimal_separator) !== signature(out, style.decimal_separator)) {
       throw new FormatSafetyError("formatting would alter the token stream; refusing (please report this input)");
     }
     return out;
   }
 
+  function collectNumbers(nd, out) {
+    switch (nd.t) {
+      case "lit":
+        if (nd.kind === "NUMBER") out.push(nd.text);
+        break;
+      case "call":
+        for (const arg of nd.args) collectNumbers(arg, out);
+        break;
+      case "bin":
+        collectNumbers(nd.left, out);
+        collectNumbers(nd.right, out);
+        break;
+      case "un":
+        collectNumbers(nd.operand, out);
+        break;
+      case "paren":
+        collectNumbers(nd.inner, out);
+        break;
+      case "brackets":
+        for (const item of nd.items) collectNumbers(item, out);
+        break;
+      case "assign":
+        collectNumbers(nd.value, out);
+        break;
+      case "rep":
+        collectNumbers(nd.index, out);
+        break;
+    }
+  }
+
+  function checkDecimalSeparators(root, style, issues) {
+    const numbers = [];
+    collectNumbers(root, numbers);
+    if (style.decimal_separator === "comma") {
+      for (const text of numbers) {
+        if (text.includes(".")) {
+          issues.push(["mixed-decimal-separators", `number \`${text}\` uses '.' but decimal_separator is "comma"`]);
+        }
+      }
+    } else if (style.decimal_separator === "auto") {
+      const firstComma = numbers.find((t) => t.includes(","));
+      const firstPeriod = numbers.find((t) => t.includes("."));
+      if (firstComma && firstPeriod) {
+        issues.push(["mixed-decimal-separators", `calculation mixes decimal separators: \`${firstComma}\` (comma) and \`${firstPeriod}\` (period)`]);
+      }
+    }
+  }
+
   function lintCalc(source, style) {
     style = style || makeStyle({});
-    if (!Object.keys(style.lint).length) return []; // no rules enabled - no opinions
-    const tokens = tokenize(source);
+    // Lex and parse before the no-rules shortcut: the Python reference does,
+    // so unparseable input must error identically here (parity contract).
+    const tokens = tokenize(source, style.decimal_separator);
     if (tokens.length === 1) return []; // comments only - nothing to lint
+    const root = parse(tokens);
+    if (!Object.keys(style.lint).length) return []; // no rules enabled - no opinions
     const issues = [];
-    lintNode(parse(tokens), style, issues);
+    lintNode(root, style, issues);
+    if ("mixed-decimal-separators" in style.lint) checkDecimalSeparators(root, style, issues);
     return issues;
   }
 

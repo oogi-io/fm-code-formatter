@@ -264,6 +264,7 @@
    "width": 96,
    "let_blank_lines": true,
    "keyword_case": "lower",
+   "decimal_separator": "auto",
    "functions": {
     "let": {
      "layout": "let",
@@ -287,7 +288,8 @@
     },
     "variable-naming": {
      "pattern": "^[_a-z][A-Za-z0-9]*$"
-    }
+    },
+    "mixed-decimal-separators": true
    }
   },
   "expected": "JSONSetElement ( \"\"\n\t; [ \"foo\" ; $bar ; JSONString ]\n\t; [ \"s\" ; \"a\" ; JSONString ]\n)\n",
@@ -300,6 +302,7 @@
    "width": 96,
    "let_blank_lines": true,
    "keyword_case": "lower",
+   "decimal_separator": "auto",
    "functions": {
     "let": {
      "layout": "let",
@@ -323,7 +326,8 @@
     },
     "variable-naming": {
      "pattern": "^[_a-z][A-Za-z0-9]*$"
-    }
+    },
+    "mixed-decimal-separators": true
    }
   },
   "expected": "Let ( [\n\n\t_foo = \"\" ;\n\n\tresult = _foo\n\n] ;\n\tresult\n)\n",
@@ -336,6 +340,7 @@
    "width": 96,
    "let_blank_lines": false,
    "keyword_case": "lower",
+   "decimal_separator": "auto",
    "functions": {
     "let": {
      "layout": "let",
@@ -470,5 +475,163 @@
   "lint": [
    "variable-naming"
   ]
+ },
+ {
+  "source": "Case ( VAT_Rate > 0 ; VAT_Rate ; ,21 )",
+  "expected": "Case ( VAT_Rate > 0 ; VAT_Rate ; 0,21 )\n",
+  "lint": []
+ },
+ {
+  "source": "1 + .5",
+  "expected": "1 + 0.5\n",
+  "lint": []
+ },
+ {
+  "source": "-,5",
+  "expected": "-0,5\n",
+  "lint": []
+ },
+ {
+  "source": ",234",
+  "expected": "0,234\n",
+  "lint": []
+ },
+ {
+  "source": "x + 1,234",
+  "expected": "ERROR: ambiguous number '1,234': 1234 (US) or 1.234 (EU); set decimal_separator to \"comma\" or \"period\" in the style pack (line 1)",
+  "lint": [
+   "ERROR: ambiguous number '1,234': 1234 (US) or 1.234 (EU); set decimal_separator to \"comma\" or \"period\" in the style pack (line 1)"
+  ]
+ },
+ {
+  "source": "x + 1,234",
+  "style": {
+   "decimal_separator": "comma"
+  },
+  "expected": "x + 1,234\n",
+  "lint": []
+ },
+ {
+  "source": "x + 1,234,567",
+  "expected": "ERROR: grouped number '1,234,567' is not valid FileMaker calculation syntax; remove the thousands separators (line 1)",
+  "lint": [
+   "ERROR: grouped number '1,234,567' is not valid FileMaker calculation syntax; remove the thousands separators (line 1)"
+  ]
+ },
+ {
+  "source": "x + 1,234.56",
+  "expected": "ERROR: grouped number '1,234.56' is not valid FileMaker calculation syntax; remove the thousands separators (line 1)",
+  "lint": [
+   "ERROR: grouped number '1,234.56' is not valid FileMaker calculation syntax; remove the thousands separators (line 1)"
+  ]
+ },
+ {
+  "source": "x + 1,5",
+  "style": {
+   "decimal_separator": "period"
+  },
+  "expected": "ERROR: unexpected ',' in number: decimal_separator is \"period\"; use \"comma\" or \"auto\" for EU notation (line 1)",
+  "lint": [
+   "ERROR: unexpected ',' in number: decimal_separator is \"period\"; use \"comma\" or \"auto\" for EU notation (line 1)"
+  ]
+ },
+ {
+  "source": "Case ( a ; 1, 2 )",
+  "style": {
+   "decimal_separator": "period"
+  },
+  "expected": "ERROR: unexpected ',' in number: decimal_separator is \"period\"; use \"comma\" or \"auto\" for EU notation (line 1)",
+  "lint": [
+   "ERROR: unexpected ',' in number: decimal_separator is \"period\"; use \"comma\" or \"auto\" for EU notation (line 1)"
+  ]
+ },
+ {
+  "source": "Case ( a ; 1, 2 )",
+  "expected": "ERROR: unexpected character ',' (line 1)",
+  "lint": [
+   "ERROR: unexpected character ',' (line 1)"
+  ]
+ },
+ {
+  "source": "x +\r\n1,234",
+  "expected": "ERROR: ambiguous number '1,234': 1234 (US) or 1.234 (EU); set decimal_separator to \"comma\" or \"period\" in the style pack (line 2)",
+  "lint": [
+   "ERROR: ambiguous number '1,234': 1234 (US) or 1.234 (EU); set decimal_separator to \"comma\" or \"period\" in the style pack (line 2)"
+  ]
+ },
+ {
+  "source": "0,21 + 3.142",
+  "style": {
+   "lint": {
+    "mixed-decimal-separators": true
+   }
+  },
+  "expected": "0,21 + 3.142\n",
+  "lint": [
+   "mixed-decimal-separators"
+  ]
+ },
+ {
+  "source": "0,21 + 3.142",
+  "style": {
+   "decimal_separator": "comma",
+   "lint": {
+    "mixed-decimal-separators": true
+   }
+  },
+  "expected": "0,21 + 3.142\n",
+  "lint": [
+   "mixed-decimal-separators"
+  ]
+ },
+ {
+  "source": "Case ( x > 3.142 ; 0,21 ; ,5 )",
+  "style": {
+   "lint": {
+    "mixed-decimal-separators": true
+   }
+  },
+  "expected": "Case ( x > 3.142 ; 0,21 ; 0,5 )\n",
+  "lint": [
+   "mixed-decimal-separators"
+  ]
+ },
+ {
+  "source": "0,21 + 1,5",
+  "style": {
+   "indent": "tab",
+   "width": 96,
+   "let_blank_lines": true,
+   "keyword_case": "lower",
+   "decimal_separator": "auto",
+   "functions": {
+    "let": {
+     "layout": "let",
+     "multiline": "always"
+    },
+    "while": {
+     "layout": "while",
+     "multiline": "always"
+    },
+    "case": {
+     "layout": "pairs"
+    },
+    "jsonsetelement": {
+     "layout": "leading",
+     "multiline": "always"
+    }
+   },
+   "lint": {
+    "let-explicit-result": {
+     "result_name": "result"
+    },
+    "variable-naming": {
+     "pattern": "^[_a-z][A-Za-z0-9]*$"
+    },
+    "mixed-decimal-separators": true
+   }
+  },
+  "expected": "0,21 + 1,5\n",
+  "lint": []
  }
 ]

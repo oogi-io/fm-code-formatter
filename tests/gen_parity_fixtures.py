@@ -118,6 +118,32 @@ CASES: list[dict] = (
             "source": "Let ( [ BadName = 1 ; result = BadName ] ; result )",
             "style": {"lint": {"variable-naming": {"pattern": "^[a-z]+$"}}},
         },
+        # 1.3.0: decimal_separator (EU comma notation) - format, errors, lint
+        {"source": "Case ( VAT_Rate > 0 ; VAT_Rate ; ,21 )"},  # normalize + preserve comma
+        {"source": "1 + .5"},  # normalize + preserve period
+        {"source": "-,5"},
+        {"source": ",234"},  # comma + 3 digits but 0-integer part: unambiguous
+        {"source": "x + 1,234"},  # ambiguous under auto -> ERROR
+        {"source": "x + 1,234", "style": {"decimal_separator": "comma"}},
+        {"source": "x + 1,234,567"},  # grouped -> ERROR
+        {"source": "x + 1,234.56"},  # grouped, mixed -> ERROR
+        {"source": "x + 1,5", "style": {"decimal_separator": "period"}},  # upgraded msg
+        {"source": "Case ( a ; 1, 2 )", "style": {"decimal_separator": "period"}},
+        {"source": "Case ( a ; 1, 2 )"},  # auto: bare legacy message
+        {"source": "x +\r\n1,234"},  # CRLF: line numbers must agree -> ERROR (line 2)
+        {
+            "source": "0,21 + 3.142",
+            "style": {"lint": {"mixed-decimal-separators": True}},
+        },
+        {
+            "source": "0,21 + 3.142",
+            "style": {"decimal_separator": "comma", "lint": {"mixed-decimal-separators": True}},
+        },
+        {
+            "source": "Case ( x > 3.142 ; 0,21 ; ,5 )",
+            "style": {"lint": {"mixed-decimal-separators": True}},
+        },
+        {"source": "0,21 + 1,5", "style": preset_dict("oogi")},  # EU calc through the oogi preset
     ]
 )
 
@@ -125,8 +151,16 @@ CASES: list[dict] = (
 def main() -> None:
     for case in CASES:
         style = Style.from_dict(case.get("style", {}))
-        case["expected"] = format_calc(case["source"], style)
-        case["lint"] = [rule for rule, _ in lint_calc(case["source"], style)]
+        # Errors are part of the parity contract: both engines must raise the
+        # byte-identical message, recorded here as "ERROR: <message>".
+        try:
+            case["expected"] = format_calc(case["source"], style)
+        except Exception as exc:  # noqa: BLE001 - message text is the fixture
+            case["expected"] = f"ERROR: {exc}"
+        try:
+            case["lint"] = [rule for rule, _ in lint_calc(case["source"], style)]
+        except Exception as exc:  # noqa: BLE001
+            case["lint"] = [f"ERROR: {exc}"]
     out = ROOT / "tests" / "parity_fixtures.json"
     out.write_text(json.dumps(CASES, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"wrote {len(CASES)} cases -> {out.relative_to(ROOT)}")
