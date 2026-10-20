@@ -12,7 +12,7 @@ LLM — comes out formatted the same way, every time.
 
 *Three ways to use it: the web app at **[fmstyle.dev](https://fmstyle.dev)** (paste, format, copy — nothing uploaded), the CLI ([![PyPI](https://img.shields.io/pypi/v/fmstyle)](https://pypi.org/project/fmstyle/) `pipx install fmstyle`), and a Claude Code skill. Repo/engine name: `fm-code-formatter`.*
 
-Sibling of [fmsonar](https://github.com/oogi-io/fm-ddr-analyzer) (same philosophy:
+Sibling of [fmsonar](https://github.com/oogi-io/fmsonar) (same philosophy:
 pure-stdlib Python core, zero dependencies, nothing leaves the machine).
 
 <p align="center">
@@ -91,7 +91,7 @@ count, and whether the Claude skill is installed. (Piped output stays plain text
 
 ## Use it from your AI assistant (Claude Code skill)
 
-Same three-way engine as [fmsonar](https://github.com/oogi-io/fm-ddr-analyzer): one
+Same three-way engine as [fmsonar](https://github.com/oogi-io/fmsonar): one
 deterministic core, reachable from the browser, the shell, **and an AI assistant**.
 The package ships a Claude Code skill so the assistant supplies the logic and
 `fmstyle` supplies the shape:
@@ -248,7 +248,7 @@ change:
 ## Validated against real solutions
 
 `tools/corpus_audit.py` replays **every calculation** from a
-[fmsonar](https://github.com/oogi-io/fm-ddr-analyzer) SQLite database through the
+[fmsonar](https://github.com/oogi-io/fmsonar) SQLite database through the
 formatter. Measured on two independent production solutions (a 4-file and a 9-file
 multi-file solution), **~89–95% of calculations format cleanly**; the exact figure
 varies by solution and by how the DDR was exported.

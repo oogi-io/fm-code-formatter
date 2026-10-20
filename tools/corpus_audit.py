@@ -1,5 +1,5 @@
 """Audit fmstyle against a real solution: every calculation in an
-fm-ddr-analyzer SQLite database is run through format_calc.
+fmsonar SQLite database is run through format_calc.
 
     python3 tools/corpus_audit.py path/to/solution.db [--functions]
 
